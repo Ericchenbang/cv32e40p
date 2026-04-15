@@ -29,6 +29,7 @@ module cv32e40p_decoder
   import cv32e40p_pkg::*;
   import cv32e40p_apu_core_pkg::*;
   import cv32e40p_fpu_pkg::*;
+  import cv32e40p_rvslh_pkg::*;
 #(
   parameter COREV_PULP        = 1,              // PULP ISA Extension (including PULP specific CSRs and hardware loop, excluding cv.elw)
   parameter COREV_CLUSTER     = 0,              // PULP ISA Extension cv.elw (need COREV_PULP = 1)
@@ -124,6 +125,7 @@ module cv32e40p_decoder
   output logic        regfile_alu_we_o,        // write enable for 2nd regfile port
   output logic        regfile_alu_we_dec_o,    // write enable for 2nd regfile port without deassert
   output logic        regfile_alu_waddr_sel_o, // Select register write address for ALU/MUL operations
+  output logic        slh_regfile_mem_we_o,
 
   // CSR manipulation
   output logic        csr_access_o,            // access to CSR
@@ -139,6 +141,7 @@ module cv32e40p_decoder
   output logic [1:0]  data_sign_extension_o,   // sign extension on read data from data memory / NaN boxing
   output logic [1:0]  data_reg_offset_o,       // offset in byte inside register for stores
   output logic        data_load_event_o,       // data request is in the special event range
+  output logic        vdata_req,
 
   // Atomic memory access
   output logic [5:0] atop_o,
@@ -260,6 +263,8 @@ module cv32e40p_decoder
     data_reg_offset_o              = 2'b00;
     data_req                       = 1'b0;
     data_load_event_o              = 1'b0;
+
+    vdata_req                      = 1'b0;
 
     atop_o                         = 6'b000000;
 
@@ -2983,6 +2988,25 @@ module cv32e40p_decoder
 
         end
       end
+
+      OPCODE_SLH: begin
+        unique case (instr_rdata_i[14:12])
+        3'b100: begin  // load vector
+          vdata_req          = 1'b1;
+          slh_regfile_mem_we = 1'b1;
+          rega_used_o        = 1'b1;
+          alu_operator_o     = ALU_ADD;
+          // offset from immediate
+          alu_op_b_mux_sel_o = OP_B_IMM;
+          imm_b_mux_sel_o    = IMMB_I;
+
+          // sign/zero extension
+          data_sign_extension_o = 2'b10;
+          data_type_o = 2'b11;
+        end
+        default: illegal_insn_o = 1'b1;
+        endcase
+      end
       default: illegal_insn_o = 1'b1;
     endcase
 
@@ -2999,6 +3023,7 @@ module cv32e40p_decoder
   assign mult_dot_en_o               = (deassert_we_i) ? 1'b0          : mult_dot_en;
   assign apu_en_o                    = (deassert_we_i) ? 1'b0          : apu_en;
   assign regfile_mem_we_o            = (deassert_we_i) ? 1'b0          : regfile_mem_we;
+  assign slh_regfile_mem_we_o        = (deassert_we_i) ? 1'b0          : slh_regfile_mem_we;
   assign regfile_alu_we_o            = (deassert_we_i) ? 1'b0          : regfile_alu_we;
   assign data_req_o                  = (deassert_we_i) ? 1'b0          : data_req;
   assign hwlp_we_o                   = (deassert_we_i) ? 3'b0          : hwlp_we;

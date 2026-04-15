@@ -8,21 +8,6 @@
 // CONDITIONS OF ANY KIND, either express or implied. See the License for the
 // specific language governing permissions and limitations under the License.
 
-////////////////////////////////////////////////////////////////////////////////
-// Engineer:       Igor Loi - igor.loi@unibo.it                               //
-//                                                                            //
-// Additional contributions by:                                               //
-//                 Andreas Traber - atraber@iis.ee.ethz.ch                    //
-//                                                                            //
-// Design Name:    Load Store Unit                                            //
-// Project Name:   RI5CY                                                      //
-// Language:       SystemVerilog                                              //
-//                                                                            //
-// Description:    Load Store Unit, used to eliminate multiple access during  //
-//                 processor stalls, and to align bytes and halfwords         //
-//                                                                            //
-////////////////////////////////////////////////////////////////////////////////
-
 module cv32e40p_load_store_unit #(
     parameter PULP_OBI = 0  // Legacy PULP OBI behavior
 ) (
@@ -45,12 +30,12 @@ module cv32e40p_load_store_unit #(
     // signals from ex stage
     input logic        data_we_ex_i,  // write enable                      -> from ex stage
     input logic [ 1:0] data_type_ex_i,  // Data type word, halfword, byte    -> from ex stage
-    input logic [31:0] data_wdata_ex_i,  // data to write to memory           -> from ex stage
+    input logic [319:0] data_wdata_ex_i,     // MODIFIED: 320 bits wide           -> from ex stage
     input logic [ 1:0] data_reg_offset_ex_i,  // offset inside register for stores -> from ex stage
     input logic        data_load_event_ex_i,  // load event                        -> from ex stage
     input logic [ 1:0] data_sign_ext_ex_i,  // sign extension                    -> from ex stage
 
-    output logic [31:0] data_rdata_ex_o,  // requested data                    -> to ex stage
+    output logic [319:0] data_rdata_ex_o,     // MODIFIED: 320 bits wide           -> to ex stage
     input  logic        data_req_ex_i,  // data request                      -> from ex stage
     input  logic [31:0] operand_a_ex_i,  // operand a from RF for address     -> from ex stage
     input  logic [31:0] operand_b_ex_i,  // operand b from RF for address     -> from ex stage
@@ -108,16 +93,29 @@ module cv32e40p_load_store_unit #(
   logic [1:0] wdata_offset;  // mux control for data to be written to memory
 
   logic [3:0] data_be;
+  logic [31:0] normal_wdata;
   logic [31:0] data_wdata;
 
   logic misaligned_st;  // high if we are currently performing the second part of a misaligned store
   logic load_err_o, store_err_o;
 
   logic [31:0] rdata_q;
+  
+  // MODIFICATION: 320-bit Burst FSM Signals
+  logic is_burst;
+  logic [3:0] req_cnt_q;
+  logic [3:0] resp_cnt_q;
+  logic [319:0] rdata_320_q;
+  logic lsu_ready_wb_normal;
+  logic lsu_ready_ex_normal;
+  logic [319:0] data_rdata_ex_o_comb;
+  logic [31:0] trans_addr_burst;
+
+  assign is_burst = (data_type_ex_i == 2'b11);
 
   ///////////////////////////////// BE generation ////////////////////////////////
   always_comb begin
-    case (data_type_ex_i)  // Data type 00 Word, 01 Half word, 11,10 byte
+    case (data_type_ex_i)  // Data type 00 Word, 01 Half word, 10 byte, 11 320b burst
       2'b00: begin  // Writing a word
         if (misaligned_st == 1'b0) begin  // non-misaligned case
           case (data_addr_int[1:0])
@@ -152,14 +150,17 @@ module cv32e40p_load_store_unit #(
         end
       end
 
-      2'b10, 2'b11: begin  // Writing a byte
+      2'b10: begin  // Writing a byte
         case (data_addr_int[1:0])
           2'b00:   data_be = 4'b0001;
           2'b01:   data_be = 4'b0010;
           2'b10:   data_be = 4'b0100;
           default: data_be = 4'b1000;
         endcase
-        ;  // case (data_addr_int[1:0])
+      end
+
+      2'b11: begin // 320-bit Burst Transfer
+        data_be = 4'b1111;
       end
     endcase
     ;  // case (data_type_ex_i)
@@ -171,14 +172,16 @@ module cv32e40p_load_store_unit #(
   assign wdata_offset = data_addr_int[1:0] - data_reg_offset_ex_i[1:0];
   always_comb begin
     case (wdata_offset)
-      2'b00: data_wdata = data_wdata_ex_i[31:0];
-      2'b01: data_wdata = {data_wdata_ex_i[23:0], data_wdata_ex_i[31:24]};
-      2'b10: data_wdata = {data_wdata_ex_i[15:0], data_wdata_ex_i[31:16]};
-      2'b11: data_wdata = {data_wdata_ex_i[7:0], data_wdata_ex_i[31:8]};
+      2'b00: normal_wdata = data_wdata_ex_i[31:0];
+      2'b01: normal_wdata = {data_wdata_ex_i[23:0], data_wdata_ex_i[31:24]};
+      2'b10: normal_wdata = {data_wdata_ex_i[15:0], data_wdata_ex_i[31:16]};
+      2'b11: normal_wdata = {data_wdata_ex_i[7:0], data_wdata_ex_i[31:8]};
     endcase
     ;  // case (wdata_offset)
   end
 
+  // MODIFICATION: Support writing chunks if data_we_ex_i is high during 2'b11
+  assign data_wdata = is_burst ? data_wdata_ex_i[{req_cnt_q, 5'd0} +: 32] : normal_wdata;
 
   // FF for rdata alignment and sign-extension
   always_ff @(posedge clk, negedge rst_n) begin
@@ -312,8 +315,29 @@ module cv32e40p_load_store_unit #(
     end
   end
 
-  // output to register file
-  assign data_rdata_ex_o = (resp_valid == 1'b1) ? data_rdata_ext : rdata_q;
+  // MODIFICATION: Build combinational array for immediate 320b output on last beat
+  always_comb begin
+      data_rdata_ex_o_comb = rdata_320_q;
+      if (is_burst && resp_valid) begin
+          case (resp_cnt_q)
+              0: data_rdata_ex_o_comb[31:0]     = resp_rdata;
+              1: data_rdata_ex_o_comb[63:32]    = resp_rdata;
+              2: data_rdata_ex_o_comb[95:64]    = resp_rdata;
+              3: data_rdata_ex_o_comb[127:96]   = resp_rdata;
+              4: data_rdata_ex_o_comb[159:128]  = resp_rdata;
+              5: data_rdata_ex_o_comb[191:160]  = resp_rdata;
+              6: data_rdata_ex_o_comb[223:192]  = resp_rdata;
+              7: data_rdata_ex_o_comb[255:224]  = resp_rdata;
+              8: data_rdata_ex_o_comb[287:256]  = resp_rdata;
+              9: data_rdata_ex_o_comb[319:288]  = resp_rdata;
+              default: ;
+          endcase
+      end
+  end
+
+  // MODIFICATION: 320-bit output to register file
+  assign data_rdata_ex_o = is_burst ? data_rdata_ex_o_comb : 
+                           {288'b0, ((resp_valid == 1'b1) ? data_rdata_ext : rdata_q)};
 
   assign misaligned_st   = data_misaligned_ex_i;
 
@@ -338,6 +362,10 @@ module cv32e40p_load_store_unit #(
         begin
           if (data_addr_int[1:0] == 2'b11) data_misaligned_o = 1'b1;
         end
+        2'b11: 
+        begin  // Burst requires word alignment
+          if (data_addr_int[1:0] != 2'b00) data_misaligned_o = 1'b1;
+        end
       endcase  // case (data_type_ex_i)
     end
   end
@@ -357,8 +385,45 @@ module cv32e40p_load_store_unit #(
   // - maximum number of outstanding transactions will not be exceeded (cnt_q < DEPTH)
   //////////////////////////////////////////////////////////////////////////////
 
-  // For last phase of misaligned transfer the address needs to be word aligned (as LSB of data_be will be set)
-  assign trans_addr = data_misaligned_ex_i ? {data_addr_int[31:2], 2'b00} : data_addr_int;
+  // MODIFICATION: Address increment for burst
+  assign trans_addr_burst = data_addr_int + {26'b0, req_cnt_q, 2'b00};
+  assign trans_addr = is_burst ? trans_addr_burst : (data_misaligned_ex_i ? {data_addr_int[31:2], 2'b00} : data_addr_int);
+
+  always_ff @(posedge clk or negedge rst_n) begin
+      if (!rst_n) begin
+          req_cnt_q <= '0;
+          resp_cnt_q <= '0;
+          rdata_320_q <= '0;
+      end else begin
+          if (lsu_ready_ex_o && data_req_ex_i) begin
+              req_cnt_q <= '0;
+              resp_cnt_q <= '0;
+          end else if (is_burst && data_req_ex_i) begin
+              if (trans_valid && trans_ready) begin
+                  req_cnt_q <= (req_cnt_q == 9) ? 10 : req_cnt_q + 1; // Hold at 10 to stop issuing
+              end
+              if (resp_valid) begin
+                  resp_cnt_q <= (resp_cnt_q == 9) ? '0 : resp_cnt_q + 1;
+                  case (resp_cnt_q)
+                      0: rdata_320_q[31:0]     <= resp_rdata;
+                      1: rdata_320_q[63:32]    <= resp_rdata;
+                      2: rdata_320_q[95:64]    <= resp_rdata;
+                      3: rdata_320_q[127:96]   <= resp_rdata;
+                      4: rdata_320_q[159:128]  <= resp_rdata;
+                      5: rdata_320_q[191:160]  <= resp_rdata;
+                      6: rdata_320_q[223:192]  <= resp_rdata;
+                      7: rdata_320_q[255:224]  <= resp_rdata;
+                      8: rdata_320_q[287:256]  <= resp_rdata;
+                      9: rdata_320_q[319:288]  <= resp_rdata;
+                  endcase
+              end
+          end else begin
+              req_cnt_q <= '0;
+              resp_cnt_q <= '0;
+          end
+      end
+  end
+
   assign trans_we = data_we_ex_i;
   assign trans_be = data_be;
   assign trans_wdata = data_wdata;
@@ -370,18 +435,20 @@ module cv32e40p_load_store_unit #(
       // OBI compatible (avoids combinatorial path from data_rvalid_i to data_req_o).
       // Multiple trans_* transactions can be issued (and accepted) before a response
       // (resp_*) is received.
-      assign trans_valid = data_req_ex_i && (cnt_q < DEPTH);
+      assign trans_valid = data_req_ex_i && (cnt_q < DEPTH) && (!is_burst || req_cnt_q < 10);
     end else begin : gen_pulp_obi
       // Legacy PULP OBI behavior, i.e. only issue subsequent transaction if preceding transfer
       // is about to finish (re-introducing timing critical path from data_rvalid_i to data_req_o)
-      assign trans_valid = (cnt_q == 2'b00) ? data_req_ex_i && (cnt_q < DEPTH) :
-                                              data_req_ex_i && (cnt_q < DEPTH) && resp_valid;
+      assign trans_valid = (cnt_q == 2'b00) ? data_req_ex_i && (cnt_q < DEPTH) && (!is_burst || req_cnt_q < 10) :
+                                              data_req_ex_i && (cnt_q < DEPTH) && resp_valid && (!is_burst || req_cnt_q < 10);
     end
   endgenerate
 
   // LSU WB stage is ready if it is not being used (i.e. no outstanding transfers, cnt_q = 0),
   // or if it WB stage is being used and the awaited response arrives (resp_rvalid).
-  assign lsu_ready_wb_o = (cnt_q == 2'b00) ? 1'b1 : resp_valid;
+  assign lsu_ready_wb_normal = (cnt_q == 2'b00) ? 1'b1 : resp_valid;
+
+  assign lsu_ready_wb = is_burst ? (data_req_ex_i == 1'b0 ? 1'b1 : (resp_cnt_q == 9 && resp_valid)) : lsu_ready_wb_normal;
 
   // LSU EX stage readyness requires two criteria to be met:
   // 
@@ -394,13 +461,14 @@ module cv32e40p_load_store_unit #(
   // in case there is already at least one outstanding transaction (so WB is full) the EX 
   // and WB stage can only signal readiness in lock step (so resp_valid is used as well).
 
-  assign lsu_ready_ex_o = (data_req_ex_i == 1'b0) ? 1'b1 :
+  // MODIFICATION: Hold EX stage unready until all 10 words are fetched
+  assign lsu_ready_ex_normal = (data_req_ex_i == 1'b0) ? 1'b1 :
                           (cnt_q == 2'b00) ? (              trans_valid && trans_ready) : 
                           (cnt_q == 2'b01) ? (resp_valid && trans_valid && trans_ready) : 
                                               resp_valid;
 
   // Update signals for EX/WB registers (when EX has valid data itself and is ready for next)
-  assign ctrl_update = lsu_ready_ex_o && data_req_ex_i;
+  assign lsu_ready_ex_o = is_burst ? (data_req_ex_i == 1'b0 ? 1'b1 : (resp_cnt_q == 9 && resp_valid)) : lsu_ready_ex_normal;
 
 
   //////////////////////////////////////////////////////////////////////////////

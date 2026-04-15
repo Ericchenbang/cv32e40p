@@ -228,10 +228,13 @@ module cv32e40p_core
   // Register Write Control
   logic        [                 5:0]       regfile_waddr_ex;
   logic                                     regfile_we_ex;
+  logic                                     slh_regfile_we_ex;
   logic        [                 5:0]       regfile_waddr_fw_wb_o;  // From WB to ID
   logic                                     regfile_we_wb;
   logic                                     regfile_we_wb_power;
-  logic        [                31:0]       regfile_wdata;
+  logic                                     slh_regfile_we_wb;
+  logic                                     slh_regfile_we_wb_power;
+  logic        [               319:0]       regfile_wdata;
 
   logic        [                 5:0]       regfile_alu_waddr_ex;
   logic                                     regfile_alu_we_ex;
@@ -264,11 +267,12 @@ module cv32e40p_core
   logic               data_req_ex;
   logic               data_load_event_ex;
   logic               data_misaligned_ex;
+  logic               vdata_req_ex;
 
   logic               p_elw_start;  // Start of cv.elw load (when data_req_o is sent)
   logic               p_elw_finish;  // Finish of cv.elw load (when data_rvalid_i is received)
 
-  logic        [31:0] lsu_rdata;
+  logic        [319:0] lsu_rdata;
 
   // stall control
   logic               halt_if;
@@ -590,8 +594,9 @@ module cv32e40p_core
       .alu_is_subrot_ex_o (alu_is_subrot_ex),
       .alu_clpx_shift_ex_o(alu_clpx_shift_ex),
 
-      .regfile_waddr_ex_o(regfile_waddr_ex),
-      .regfile_we_ex_o   (regfile_we_ex),
+      .regfile_waddr_ex_o (regfile_waddr_ex),
+      .regfile_we_ex_o    (regfile_we_ex),
+      .slh_regfile_we_ex_o(slh_regfile_we_ex),
 
       .regfile_alu_we_ex_o   (regfile_alu_we_ex),
       .regfile_alu_waddr_ex_o(regfile_alu_waddr_ex),
@@ -668,6 +673,7 @@ module cv32e40p_core
       .data_sign_ext_ex_o  (data_sign_ext_ex),  // to load store unit
       .data_reg_offset_ex_o(data_reg_offset_ex),  // to load store unit
       .data_load_event_ex_o(data_load_event_ex),  // to load store unit
+      .vdata_req_ex_o      (vdata_req_ex),
 
       .data_misaligned_ex_o(data_misaligned_ex),  // to load store unit
 
@@ -707,12 +713,20 @@ module cv32e40p_core
       .regfile_waddr_wb_i   (regfile_waddr_fw_wb_o),  // Write address ex-wb pipeline
       .regfile_we_wb_i      (regfile_we_wb),  // write enable for the register file
       .regfile_we_wb_power_i(regfile_we_wb_power),
-      .regfile_wdata_wb_i   (regfile_wdata),  // write data to commit in the register file
+      .regfile_wdata_wb_i   (regfile_wdata[31:0]),  // write data to commit in the register file
 
       .regfile_alu_waddr_fw_i   (regfile_alu_waddr_fw),
       .regfile_alu_we_fw_i      (regfile_alu_we_fw),
       .regfile_alu_we_fw_power_i(regfile_alu_we_fw_power),
       .regfile_alu_wdata_fw_i   (regfile_alu_wdata_fw),
+
+      .slh_regfile_waddr_wb_i(slh_regfile_we_wb),
+      .slh_regfile_we_wb_power_i(slh_regfile_we_wb_power),
+      .slh_regfile_wdata_wb_i(regfile_wdata),
+
+      .slh_regfile_alu_waddr_fw_i(0),
+      .slh_regfile_alu_we_fw_power_i(0),
+      .slh_regfile_alu_wdata_fw_i(0),
 
       // from ALU
       .mult_multicycle_i(mult_multicycle),
@@ -832,7 +846,7 @@ module cv32e40p_core
       .apu_result_i  (apu_result_i),
       .apu_flags_i   (apu_flags_i),
 
-      .lsu_en_i   (data_req_ex),
+      .lsu_en_i   (data_req_ex||vdata_req_ex),
       .lsu_rdata_i(lsu_rdata),
 
       // interface with CSRs
@@ -844,14 +858,17 @@ module cv32e40p_core
       .regfile_alu_waddr_i(regfile_alu_waddr_ex),
       .regfile_alu_we_i   (regfile_alu_we_ex),
 
-      .regfile_waddr_i(regfile_waddr_ex),
-      .regfile_we_i   (regfile_we_ex),
+      .regfile_waddr_i (regfile_waddr_ex),
+      .regfile_we_i    (regfile_we_ex),
+      .slh_regfile_we_i(slh_regfile_we_ex),
 
       // Output of ex stage pipeline
-      .regfile_waddr_wb_o   (regfile_waddr_fw_wb_o),
-      .regfile_we_wb_o      (regfile_we_wb),
-      .regfile_we_wb_power_o(regfile_we_wb_power),
-      .regfile_wdata_wb_o   (regfile_wdata),
+      .regfile_waddr_wb_o       (regfile_waddr_fw_wb_o),
+      .regfile_we_wb_o          (regfile_we_wb),
+      .regfile_we_wb_power_o    (regfile_we_wb_power),
+      .slh_regfile_we_wb_o      (slh_regfile_we_wb),
+      .slh_regfile_we_wb_power_o(slh_regfile_we_wb_power),
+      .regfile_wdata_wb_o       (regfile_wdata),
 
       // To IF: Jump and branch target and decision
       .jump_target_o    (jump_target_ex),
@@ -913,7 +930,7 @@ module cv32e40p_core
       .data_sign_ext_ex_i  (data_sign_ext_ex),  // sign extension
 
       .data_rdata_ex_o  (lsu_rdata),
-      .data_req_ex_i    (data_req_ex),
+      .data_req_ex_i    (data_req_ex||vdata_req_ex),
       .operand_a_ex_i   (alu_operand_a_ex),
       .operand_b_ex_i   (alu_operand_b_ex),
       .addr_useincr_ex_i(useincr_addr_ex),
