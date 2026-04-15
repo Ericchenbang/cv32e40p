@@ -15,7 +15,7 @@ RTLSRC_HOME      := ..
 CV_CORE_MANIFEST := $(RTLSRC_HOME)/cv32e40p_manifest.flist
 TB_CORE          := $(RTLSRC_HOME)/example_tb/core
 RTLSRC_TB_PKG    := $(TB_CORE)/include/perturbation_pkg.sv
-RTLSRC_TB_TOP    := $(TB_CORE)/tb_top.sv
+RTLSRC_TB_TOP    := tb_top.sv
 RTLSRC_TB        := $(filter-out $(TB_CORE)/cv32e40p_fp_wrapper.sv $(RTLSRC_TB_TOP), $(wildcard $(TB_CORE)/*.sv))
 export DESIGN_RTL_DIR = $(RTLSRC_HOME)/rtl
 
