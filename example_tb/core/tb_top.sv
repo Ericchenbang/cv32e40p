@@ -71,7 +71,7 @@ module tb_top #(
 
   initial begin
       $display("start to dump fsdb file");
-      $fsdbDumpfile("test.fsdb");
+      $fsdbDumpfile("main.fsdb");
       $fsdbDumpvars();
       $fsdbDumpMDA();
   end
