@@ -16,17 +16,9 @@
  * Author: Robert Balas <balasr@iis.ee.ethz.ch>
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-
-#include "mem_stall.h"
-
-int main(int argc, char *argv[])
-{
-#ifdef RANDOM_MEM_STALL
-    activate_random_stall();
-#endif
-    /* write something to stdout */
-    printf("hello world!\n");
-    return EXIT_SUCCESS;
+int main() {
+    volatile int a = 10;
+    volatile int b = 20;
+    volatile int c = a + b;
+    while(1);
 }

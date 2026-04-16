@@ -57,11 +57,23 @@ module tb_top #(
   assign fetch_enable = '1;
 
   // allow vcd dump
+  // initial begin
+  //   if ($test$plusargs("vcd")) begin
+  //     $dumpfile("riscy_tb.vcd");
+  //     $dumpvars(0, tb_top);
+  //   end
+  // end
+  // initial begin
+  //     $display("!!! HARD-CODED DUMP STARTING !!!");
+  //     $dumpfile("/home/ic_contest/diclab008/project/cv32e40p/example_tb/core/test_dump.vcd");
+  //     $dumpvars(0, tb_top);
+  // end
+
   initial begin
-    if ($test$plusargs("vcd")) begin
-      $dumpfile("riscy_tb.vcd");
-      $dumpvars(0, tb_top);
-    end
+      $display("start to dump fsdb file");
+      $fsdbDumpfile("test.fsdb");
+      $fsdbDumpvars();
+      $fsdbDumpMDA();
   end
 
   // we either load the provided firmware or execute a small test program that

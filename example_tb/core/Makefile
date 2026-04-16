@@ -23,6 +23,11 @@
 
 MAKE			= make
 
+# vcs, verdi
+VCS             = vcs
+VERDI           = verdi
+VCS_FLAGS       = -sverilog -full64 -debug_access+all -timescale=1ns/1ps -kdb -l vcs.log -ntb_opts uvm +define+CV32E40P_TRACE_EXECUTION -f $(CV_CORE_MANIFEST) $(RTLSRC_TB_PKG) $(RTLSRC_TB)
+
 # vsim configuration
 VVERSION                = "10.7b"
 
@@ -204,8 +209,9 @@ tb-clean-fp:
 # This is an example for running a Hello World in the testbench
 # We link with our custom crt0.s and syscalls.c against newlib so that we can
 # use the c standard library
+# add -mabi=ilp32 prevent error
 custom/hello_world.elf: custom/hello_world.c
-	$(RISCV_EXE_PREFIX)gcc -march=rv32imc -o $@ -w -Os -g -nostdlib \
+	$(RISCV_EXE_PREFIX)gcc -march=rv32imc_zicsr -mabi=ilp32 -o $@ -w -Os -g -nostdlib \
 		$(CUSTOM_GCC_FLAGS) \
 		-T custom/link.ld \
 		-static \
@@ -217,6 +223,23 @@ custom/hello_world.elf: custom/hello_world.c
 		-lc -lm -lgcc
 custom-clean:
 	rm -rf custom/hello_world.elf custom/hello_world.hex
+
+
+
+
+# vcs
+.PHONY: custom-vcs-run
+custom-vcs-run: custom/hello_world.hex
+	$(VCS) $(VCS_FLAGS)
+	./simv +firmware=custom/hello_world.hex +vcd
+
+# verdi
+.PHONY: custom-verdi
+custom-verdi:
+	$(VERDI) -f $(CV_CORE_MANIFEST) $(RTLSRC_TB_PKG) $(RTLSRC_TB) -ssf riscy_tb.vcd &
+
+
+
 
 .PHONY: custom-vsim-run
 custom-vsim-run: vsim-all custom/hello_world.hex
