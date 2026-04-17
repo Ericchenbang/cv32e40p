@@ -12,7 +12,7 @@ VCS_SIM_FLAGS = +fsdb
 # RTL & Testbench Source Files
 # ==============================================================================
 RTLSRC_HOME      := ..
-CV_CORE_MANIFEST := $(RTLSRC_HOME)/cv32e40p_manifest.flist
+CV_CORE_MANIFEST := $(RTLSRC_HOME)/cv32e40p_slh_manifest.flist
 TB_CORE          := $(RTLSRC_HOME)/example_tb/core
 RTLSRC_TB_PKG    := $(TB_CORE)/include/perturbation_pkg.sv
 RTLSRC_TB_TOP    := tb_top.sv
