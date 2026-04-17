@@ -167,6 +167,7 @@ module cv32e40p_decoder
   // write enable/request control
   logic       regfile_mem_we;
   logic       regfile_alu_we;
+  logic       slh_regfile_mem_we;
   logic       data_req;
   logic [2:0] hwlp_we;
   logic       csr_illegal;
@@ -239,6 +240,7 @@ module cv32e40p_decoder
 
     regfile_mem_we                 = 1'b0;
     regfile_alu_we                 = 1'b0;
+    slh_regfile_mem_we             = 1'b0;
     regfile_alu_waddr_sel_o        = 1'b1;
 
     prepost_useincr_o              = 1'b1;

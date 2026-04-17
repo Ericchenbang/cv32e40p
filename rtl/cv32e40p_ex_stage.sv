@@ -232,7 +232,7 @@ module cv32e40p_ex_stage
     regfile_we_wb_o       = 1'b0;
     regfile_we_wb_power_o = 1'b0;
     slh_regfile_we_wb_o   = 1'b0;
-    slh_regfile_we_wb_pow = 1'b0;
+    slh_regfile_we_wb_power_o = 1'b0;
     regfile_waddr_wb_o    = regfile_waddr_lsu;
     regfile_wdata_wb_o    = lsu_rdata_i;
     wb_contention_lsu     = 1'b0;

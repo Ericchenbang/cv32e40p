@@ -26,3 +26,9 @@ cadence_conformal
 synopsys_formality
 questa_autocheck
 reports
+
+# synopsis file
+vcs/
+verdiLog/
+novas.conf
+novas.rc
