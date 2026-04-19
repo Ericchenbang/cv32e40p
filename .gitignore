@@ -35,3 +35,5 @@ ucli.key
 *.fsdb
 csrc
 verdiLog
+nWaveLog
+novas.conf

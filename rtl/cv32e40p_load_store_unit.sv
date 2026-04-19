@@ -469,7 +469,8 @@ module cv32e40p_load_store_unit #(
 
   // Update signals for EX/WB registers (when EX has valid data itself and is ready for next)
   assign lsu_ready_ex_o = is_burst ? (data_req_ex_i == 1'b0 ? 1'b1 : (resp_cnt_q == 9 && resp_valid)) : lsu_ready_ex_normal;
-
+  
+  assign ctrl_update = lsu_ready_ex_o && data_req_ex_i;
 
   //////////////////////////////////////////////////////////////////////////////
   // Counter (cnt_q, next_cnt) to count number of outstanding OBI transactions 
