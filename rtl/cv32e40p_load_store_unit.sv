@@ -448,7 +448,7 @@ module cv32e40p_load_store_unit #(
   // or if it WB stage is being used and the awaited response arrives (resp_rvalid).
   assign lsu_ready_wb_normal = (cnt_q == 2'b00) ? 1'b1 : resp_valid;
 
-  assign lsu_ready_wb = is_burst ? (data_req_ex_i == 1'b0 ? 1'b1 : (resp_cnt_q == 9 && resp_valid)) : lsu_ready_wb_normal;
+  assign lsu_ready_wb_o = is_burst ? (data_req_ex_i == 1'b0 ? 1'b1 : (resp_cnt_q == 9 && resp_valid)) : lsu_ready_wb_normal;
 
   // LSU EX stage readyness requires two criteria to be met:
   // 
@@ -496,7 +496,7 @@ module cv32e40p_load_store_unit #(
       2'b10: begin
         next_cnt = cnt_q + 1'b1;
       end
-      2'b11: begin
+      default: begin
         next_cnt = cnt_q;
       end
     endcase

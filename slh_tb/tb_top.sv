@@ -111,6 +111,9 @@ module tb_top();
     if (exit_valid) begin
       if (exit_value == 0) $display("EXIT SUCCESS");
       else $display("EXIT FAILURE: %d", exit_value);
+      if ($test$plusargs("verbose")) begin
+        $display("regfile[0]: %x", wrapper_i.top_i.core_i.id_stage_i.register_file_i.mem[0]);
+      end
       $finish;
     end
   end
