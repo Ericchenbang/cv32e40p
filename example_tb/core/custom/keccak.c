@@ -8,8 +8,9 @@
 static void KeccakF1600_StatePermute(uint64_t *);
 
 volatile uint64_t s[25] = {0};
-volatile uint32_t result;
+volatile uint64_t result;
 
+/*
 const uint64_t ans[] = {
     17376452488221285863,
     9571781953733019530,
@@ -37,8 +38,18 @@ const uint64_t ans[] = {
     8500057116360352059,
     16929593379567477321
 };
+*/
 
+static inline uint64_t rdcycle64() {
+    uint32_t hi, lo, hi2;
+    do {
+        asm volatile ("rdcycleh %0" : "=r"(hi));
+        asm volatile ("rdcycle %0"  : "=r"(lo));
+        asm volatile ("rdcycleh %0" : "=r"(hi2));
+    } while (hi != hi2);
 
+    return ((uint64_t)hi << 32) | lo;
+}
 
 int main() {
     uint64_t start, end;
@@ -46,14 +57,16 @@ int main() {
     // enable counter
     asm volatile ("csrw mcountinhibit, zero");
     // start Performance Counter
-    asm volatile ("rdcycle %0" : "=r"(start));
+    start = rdcycle64();
 
     KeccakF1600_StatePermute(s);
 
-    asm volatile ("rdcycle %0" : "=r"(end));
+    end = rdcycle64();
 
     // end - start = Baseline Cycle Count
-    result = (uint32_t)(end - start);
+    printf("end: %llu\n", end);
+    printf("start: %llu\n", start);
+    result = end - start;
 
     // int allCorrect = 1;
     // for (int i = 0; i < 25; i = i + 1){
@@ -67,7 +80,7 @@ int main() {
     
     
     //while(1); 
-    printf("Cycles: %d\n", result);
+    printf("Cycles: %llu\n", result);
     return 0;
 }
 
