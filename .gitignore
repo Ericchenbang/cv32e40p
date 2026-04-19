@@ -26,3 +26,11 @@ cadence_conformal
 synopsys_formality
 questa_autocheck
 reports
+
+# synopsis
+simv
+simv.daidir
+vc_hdrs.h
+ucli.key
+*.fsdb
+csrc

@@ -33,8 +33,8 @@ module tb_top();
   // allow fsdb dump
   initial begin
     if ($test$plusargs("fsdb")) begin
-      $fsdbdumpfile("wave.fsdb");
-      $fsdbdumpvars(0, tb_top);
+      $fsdbDumpfile("wave.fsdb");
+      $fsdbDumpvars(0, tb_top);
     end
   end
 
