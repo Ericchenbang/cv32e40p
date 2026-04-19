@@ -20,6 +20,5 @@ _start:
     sw      t0, 0(s0) 
     addi    s0, zero, 0x200
 
-
 loop:
     j       loop
