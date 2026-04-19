@@ -31,7 +31,7 @@ simv: $(CV_CORE_MANIFEST) $(RTLSRC_TB_PKG) $(RTLSRC_TB) $(RTLSRC_TB_TOP)
 run: simv $(PROG)
 	./simv $(VCS_SIM_FLAGS) +firmware=$(PROG)
 
-clean: custom-clean
+clean:
 	$(MAKE) -C $(TEST_DIR) clean
 	rm -rf simv simv.daidir csrc ucli.key vc_hdrs.h DVEfiles inter.vpd *.vcd *.log
 	
