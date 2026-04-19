@@ -5,7 +5,7 @@ TEST ?= hello_world
 # VCS Configuration
 # ==============================================================================
 VCS           = vcs
-VCS_FLAGS     = -sverilog -full64 -debug_access+all -ntb_opts uvm -timescale=1ns/10ps +define+CV32E40P_TRACE_EXECUTION
+VCS_FLAGS     = -sverilog -full64 -debug_access -fsdbon -ntb_opts uvm -timescale=1ns/10ps +define+CV32E40P_TRACE_EXECUTION
 VCS_SIM_FLAGS = +fsdb
 
 # ==============================================================================
