@@ -982,7 +982,7 @@ wire [319:0] 	vdata_c_o;
 cv32e40p_slh_register_file #(
 	.ADDR_WIDTH 	( 4    ),
 	.DATA_WIDTH 	( 320  ))
-u_cv32e40p_slh_register_file(
+slh_register_file_i (
 	.clk       	( clk        ),
 	.rst_n     	( rst_n      ),
 	.vaddr_a_i 	( 0  ),
@@ -1117,7 +1117,7 @@ u_cv32e40p_slh_register_file(
       .data_sign_extension_o(data_sign_ext_id),
       .data_reg_offset_o    (data_reg_offset_id),
       .data_load_event_o    (data_load_event_id),
-      .vdata_req            (vdata_req_id),
+      .vdata_req_o          (vdata_req_id),
 
       // Atomic memory access
       .atop_o(atop_id),

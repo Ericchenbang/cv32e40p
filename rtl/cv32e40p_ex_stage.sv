@@ -237,15 +237,16 @@ module cv32e40p_ex_stage
     regfile_wdata_wb_o    = lsu_rdata_i;
     wb_contention_lsu     = 1'b0;
 
+    if (slh_regfile_we_lsu) begin
+      slh_regfile_we_wb_o       = 1'b1;
+      slh_regfile_we_wb_power_o = (COREV_PULP == 0) ? 1'b1 : ~data_misaligned_ex_i & wb_ready_i;
+    end
     if (regfile_we_lsu) begin
       regfile_we_wb_o       = 1'b1;
       regfile_we_wb_power_o = (COREV_PULP == 0) ? 1'b1 : ~data_misaligned_ex_i & wb_ready_i;
       if (apu_valid & (!apu_singlecycle & !apu_multicycle)) begin
         wb_contention_lsu = 1'b1;
       end
-    end else if (slh_regfile_we_i) begin
-      slh_regfile_we_wb_o       = 1'b1;
-      slh_regfile_we_wb_power_o = (COREV_PULP == 0) ? 1'b1 : ~data_misaligned_ex_i & wb_ready_i;
       // APU two-cycle operations are written back on LSU port
     end else if (apu_valid & (!apu_singlecycle & !apu_multicycle)) begin
       regfile_we_wb_o       = 1'b1;
@@ -474,8 +475,8 @@ module cv32e40p_ex_stage
       end else if (wb_ready_i) begin
         // we are ready for a new instruction, but there is none available,
         // so we just flush the current one out of the pipe
-        regfile_we_lsu    <= 1'b0;
-        slh_regfile_we_lsu<= 1'b0;
+        regfile_we_lsu     <= 1'b0;
+        slh_regfile_we_lsu <= 1'b0;
       end
     end
   end

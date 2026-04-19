@@ -67,7 +67,7 @@ module cv32e40p_slh_register_file #(
     //-- WRITE : Write operation
     //-----------------------------------------------------------------------------
     // loop from 0 to NUM_VECTORS-1
-    for (i = 1; i < NUM_VECTORS; i++) begin : gen_rf
+    for (i = 0; i < NUM_VECTORS; i++) begin : gen_slh_rf
 
       always_ff @(posedge clk, negedge rst_n) begin : register_write_behavioral
         if (rst_n == 1'b0) begin

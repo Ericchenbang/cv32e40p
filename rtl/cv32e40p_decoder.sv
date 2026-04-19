@@ -141,7 +141,7 @@ module cv32e40p_decoder
   output logic [1:0]  data_sign_extension_o,   // sign extension on read data from data memory / NaN boxing
   output logic [1:0]  data_reg_offset_o,       // offset in byte inside register for stores
   output logic        data_load_event_o,       // data request is in the special event range
-  output logic        vdata_req,
+  output logic        vdata_req_o,
 
   // Atomic memory access
   output logic [5:0] atop_o,
@@ -169,6 +169,7 @@ module cv32e40p_decoder
   logic       regfile_alu_we;
   logic       slh_regfile_mem_we;
   logic       data_req;
+  logic       vdata_req;
   logic [2:0] hwlp_we;
   logic       csr_illegal;
   logic [1:0] ctrl_transfer_insn;
@@ -393,26 +394,47 @@ module cv32e40p_decoder
       end
 
       OPCODE_LOAD: begin
-        data_req           = 1'b1;
-        regfile_mem_we     = 1'b1;
-        rega_used_o        = 1'b1;
-        alu_operator_o     = ALU_ADD;
-        // offset from immediate
-        alu_op_b_mux_sel_o = OP_B_IMM;
-        imm_b_mux_sel_o    = IMMB_I;
-
-        // sign/zero extension
-        data_sign_extension_o = {1'b0,~instr_rdata_i[14]};
-
-        // load size
         unique case (instr_rdata_i[14:12])
-          3'b000, 3'b100: data_type_o = 2'b10; // LB/LBU
-          3'b001, 3'b101: data_type_o = 2'b01; // LH/LHU
-          3'b010        : data_type_o = 2'b00; // LW
-          default: begin
+        3'b000, 3'b100, 3'b001, 3'b101, 3'b010: begin
+          data_req           = 1'b1;
+          regfile_mem_we     = 1'b1;
+          rega_used_o        = 1'b1;
+          alu_operator_o     = ALU_ADD;
+          // offset from immediate
+          alu_op_b_mux_sel_o = OP_B_IMM;
+          imm_b_mux_sel_o    = IMMB_I;
+
+          // sign/zero extension
+          data_sign_extension_o = {1'b0,~instr_rdata_i[14]};
+          // load size
+          unique case (instr_rdata_i[14:12])
+            3'b000, 3'b100: data_type_o = 2'b10; // LB/LBU
+            3'b001, 3'b101: data_type_o = 2'b01; // LH/LHU
+            default       : data_type_o = 2'b00; // LW
+          endcase
+        end
+        3'b111: begin
+          if (instr_rdata_i[11:7]>5'd15)
             illegal_insn_o = 1'b1;
+          else begin
+            vdata_req          = 1'b1;
+            slh_regfile_mem_we = 1'b1;
+            rega_used_o        = 1'b1;
+            alu_operator_o     = ALU_ADD;
+            // offset from immediate
+            alu_op_b_mux_sel_o = OP_B_IMM;
+            imm_b_mux_sel_o    = IMMB_I;
+
+            // sign/zero extension
+            data_sign_extension_o = {1'b0,~instr_rdata_i[14]};
+            data_type_o = 2'b11;
           end
+        end
+        default: begin
+            illegal_insn_o = 1'b1;
+        end
         endcase
+
       end
 
       OPCODE_AMO: begin
@@ -3028,6 +3050,7 @@ module cv32e40p_decoder
   assign slh_regfile_mem_we_o        = (deassert_we_i) ? 1'b0          : slh_regfile_mem_we;
   assign regfile_alu_we_o            = (deassert_we_i) ? 1'b0          : regfile_alu_we;
   assign data_req_o                  = (deassert_we_i) ? 1'b0          : data_req;
+  assign vdata_req_o                 = (deassert_we_i) ? 1'b0          : vdata_req;
   assign hwlp_we_o                   = (deassert_we_i) ? 3'b0          : hwlp_we;
   assign csr_op_o                    = (deassert_we_i) ? CSR_OP_READ   : csr_op;
   assign ctrl_transfer_insn_in_id_o  = (deassert_we_i) ? BRANCH_NONE   : ctrl_transfer_insn;
