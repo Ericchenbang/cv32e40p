@@ -23,6 +23,9 @@
 
 MAKE			= make
 
+# the target file in custom/
+TARGET			= hello_world
+
 # vcs, verdi
 VCS             = vcs
 VERDI           = verdi
@@ -213,7 +216,7 @@ tb-clean-fp:
 # We link with our custom crt0.s and syscalls.c against newlib so that we can
 # use the c standard library
 # add -mabi=ilp32 prevent error
-custom/main.elf: custom/main.c
+custom/$(TARGET).elf: custom/$(TARGET).c
 	$(RISCV_EXE_PREFIX)gcc -march=rv32imc_zicsr -mabi=ilp32 -o $@ -w -Os -g -nostdlib \
 		$(CUSTOM_GCC_FLAGS) \
 		-T custom/link.ld \
@@ -225,16 +228,16 @@ custom/main.elf: custom/main.c
 		-L $(RISCV)/riscv32-unknown-elf/lib \
 		-lc -lm -lgcc
 custom-clean:
-	rm -rf custom/main.elf custom/main.hex
+	rm -rf custom/$(TARGET).elf custom/$(TARGET).hex
 
 
 
 
 # vcs
 .PHONY: custom-vcs-run
-custom-vcs-run: custom/main.hex
+custom-vcs-run: custom/$(TARGET).hex
 	$(VCS) $(VCS_FLAGS)
-	./simv +firmware=custom/main.hex +vcd
+	./simv +firmware=custom/$(TARGET).hex +vcd
 
 # verdi
 .PHONY: custom-verdi
@@ -258,7 +261,7 @@ custom-vsim-run-gui: vsim-run-gui
 # This is an example for running a floating-point matrix multiplication in the testbench
 # We link with our custom crt0.s and syscalls.c against newlib so that we can
 # use the c standard library
-custom_fp/main.elf: custom_fp/matmulNxN.c custom_fp/main.c
+custom_fp/$(TARGET).elf: custom_fp/matmulNxN.c custom_fp/$(TARGET).c
 	$(RISCV_EXE_PREFIX)gcc -march=rv32imfc -mabi=ilp32f -o $@ -w -g -nostdlib \
 		$(CUSTOM_GCC_FLAGS) \
 		-T custom/link.ld  \
@@ -269,17 +272,17 @@ custom_fp/main.elf: custom_fp/matmulNxN.c custom_fp/main.c
 		-L $(RISCV)/riscv32-unknown-elf/lib \
 		-lc -lm -lgcc
 custom-fp-clean:
-	rm -rf custom_fp/main.elf custom_fp/main.hex
+	rm -rf custom_fp/$(TARGET).elf custom_fp/$(TARGET).hex
 
 .PHONY: custom-fp-vsim-run
-custom-fp-vsim-run: vsim-all-fp custom_fp/main.hex
-custom-fp-vsim-run: ALL_VSIM_FLAGS += "+firmware=custom_fp/main.hex"
+custom-fp-vsim-run: vsim-all-fp custom_fp/$(TARGET).hex
+custom-fp-vsim-run: ALL_VSIM_FLAGS += "+firmware=custom_fp/$(TARGET).hex"
 custom-fp-vsim-run: vsim-run-fp
 
 
 .PHONY: custom-fp-vsim-run-gui
-custom-fp-vsim-run-gui: vsim-all-fp custom_fp/main.hex
-custom-fp-vsim-run-gui: ALL_VSIM_FLAGS += "+firmware=custom_fp/main.hex"
+custom-fp-vsim-run-gui: vsim-all-fp custom_fp/$(TARGET).hex
+custom-fp-vsim-run-gui: ALL_VSIM_FLAGS += "+firmware=custom_fp/$(TARGET).hex"
 custom-fp-vsim-run-gui: vsim-run-gui-fp
 
 # compile and run interrupt
