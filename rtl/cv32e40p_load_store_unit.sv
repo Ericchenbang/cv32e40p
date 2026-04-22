@@ -107,7 +107,9 @@ module cv32e40p_load_store_unit #(
   logic [3:0] resp_cnt_q;
   logic [319:0] rdata_320_q;
   logic lsu_ready_wb_normal;
+  logic lsu_ready_wb_burst;
   logic lsu_ready_ex_normal;
+  logic lsu_ready_ex_burst;
   logic [319:0] data_rdata_ex_o_comb;
   logic [31:0] trans_addr_burst;
 
@@ -393,34 +395,39 @@ module cv32e40p_load_store_unit #(
       if (!rst_n) begin
           req_cnt_q <= '0;
           resp_cnt_q <= '0;
-          rdata_320_q <= '0;
       end else begin
-          if (lsu_ready_ex_o && data_req_ex_i) begin
-              req_cnt_q <= '0;
-              resp_cnt_q <= '0;
-          end else if (is_burst && data_req_ex_i) begin
-              if (trans_valid && trans_ready) begin
-                  req_cnt_q <= (req_cnt_q == 9) ? 10 : req_cnt_q + 1; // Hold at 10 to stop issuing
-              end
-              if (resp_valid) begin
-                  resp_cnt_q <= (resp_cnt_q == 9) ? '0 : resp_cnt_q + 1;
-                  case (resp_cnt_q)
-                      0: rdata_320_q[31:0]     <= resp_rdata;
-                      1: rdata_320_q[63:32]    <= resp_rdata;
-                      2: rdata_320_q[95:64]    <= resp_rdata;
-                      3: rdata_320_q[127:96]   <= resp_rdata;
-                      4: rdata_320_q[159:128]  <= resp_rdata;
-                      5: rdata_320_q[191:160]  <= resp_rdata;
-                      6: rdata_320_q[223:192]  <= resp_rdata;
-                      7: rdata_320_q[255:224]  <= resp_rdata;
-                      8: rdata_320_q[287:256]  <= resp_rdata;
-                      9: rdata_320_q[319:288]  <= resp_rdata;
-                  endcase
-              end
-          end else begin
-              req_cnt_q <= '0;
-              resp_cnt_q <= '0;
+        if (is_burst) begin
+          if (trans_valid && trans_ready) 
+            req_cnt_q <= (req_cnt_q == 9) ? '0 : req_cnt_q + 1;
+          if (resp_valid)
+            resp_cnt_q <= (resp_cnt_q == 9) ? '0 : resp_cnt_q + 1;
+        end else if (lsu_ready_ex_o && data_req_ex_i) begin
+          req_cnt_q <= '0;
+          resp_cnt_q <= '0;
+        end 
+      end
+  end
+
+  always_ff @(posedge clk or negedge rst_n) begin
+      if (!rst_n) begin
+        rdata_320_q <= '0;
+      end else begin
+        if (is_burst) begin
+          if (resp_valid) begin
+            case (resp_cnt_q)
+            4'd0: rdata_320_q[31:0]     <= resp_rdata;
+            4'd1: rdata_320_q[63:32]    <= resp_rdata;
+            4'd2: rdata_320_q[95:64]    <= resp_rdata;
+            4'd3: rdata_320_q[127:96]   <= resp_rdata;
+            4'd4: rdata_320_q[159:128]  <= resp_rdata;
+            4'd5: rdata_320_q[191:160]  <= resp_rdata;
+            4'd6: rdata_320_q[223:192]  <= resp_rdata;
+            4'd7: rdata_320_q[255:224]  <= resp_rdata;
+            4'd8: rdata_320_q[287:256]  <= resp_rdata;
+            4'd9: rdata_320_q[319:288]  <= resp_rdata;
+            endcase
           end
+        end
       end
   end
 
@@ -447,8 +454,9 @@ module cv32e40p_load_store_unit #(
   // LSU WB stage is ready if it is not being used (i.e. no outstanding transfers, cnt_q = 0),
   // or if it WB stage is being used and the awaited response arrives (resp_rvalid).
   assign lsu_ready_wb_normal = (cnt_q == 2'b00) ? 1'b1 : resp_valid;
+  assign lsu_ready_wb_burst = (data_req_ex_i == 1'b0 ? 1'b1 : (resp_cnt_q == 9 && resp_valid));
 
-  assign lsu_ready_wb_o = is_burst ? (data_req_ex_i == 1'b0 ? 1'b1 : (resp_cnt_q == 9 && resp_valid)) : lsu_ready_wb_normal;
+  assign lsu_ready_wb_o = is_burst ? lsu_ready_wb_burst : lsu_ready_wb_normal;
 
   // LSU EX stage readyness requires two criteria to be met:
   // 
@@ -466,9 +474,10 @@ module cv32e40p_load_store_unit #(
                           (cnt_q == 2'b00) ? (              trans_valid && trans_ready) : 
                           (cnt_q == 2'b01) ? (resp_valid && trans_valid && trans_ready) : 
                                               resp_valid;
+  assign lsu_ready_ex_burst = (data_req_ex_i == 1'b0 ? 1'b1 : (resp_cnt_q == 9 && resp_valid));
 
   // Update signals for EX/WB registers (when EX has valid data itself and is ready for next)
-  assign lsu_ready_ex_o = is_burst ? (data_req_ex_i == 1'b0 ? 1'b1 : (resp_cnt_q == 9 && resp_valid)) : lsu_ready_ex_normal;
+  assign lsu_ready_ex_o = is_burst ? lsu_ready_ex_burst : lsu_ready_ex_normal;
   
   assign ctrl_update = lsu_ready_ex_o && data_req_ex_i;
 

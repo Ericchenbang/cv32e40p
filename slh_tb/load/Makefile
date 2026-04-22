@@ -11,7 +11,7 @@ $(HEX): $(TARGET).elf
 	$(RISCV_EXE_PREFIX)objcopy -O verilog $< $@
 
 $(TARGET).elf: load.S
-	$(RISCV_EXE_PREFIX)gcc -march=rv32imc -o $@ -w -Os -g -nostdlib \
+	$(RISCV_EXE_PREFIX)gcc -march=rv32imc -o $@ -w -g -nostdlib \
 		-T ../../example_tb/core/custom/link.ld \
 		-static \
 		$^

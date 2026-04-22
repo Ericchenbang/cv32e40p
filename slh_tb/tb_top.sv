@@ -99,6 +99,7 @@ module tb_top();
   end
 
   // check if we succeded
+  integer i;
   always_ff @(posedge clk, negedge rst_n) begin
     if (tests_passed) begin
       $display("ALL TESTS PASSED");
@@ -112,7 +113,8 @@ module tb_top();
       if (exit_value == 0) $display("EXIT SUCCESS");
       else $display("EXIT FAILURE: %d", exit_value);
       if ($test$plusargs("verbose")) begin
-        $display("slh regfile[0]: %x", wrapper_i.top_i.core_i.id_stage_i.slh_register_file_i.mem[0]);
+        for (i = 0; i<16; i+=1)
+          $display("slh regfile[%d]: %x", i, wrapper_i.top_i.core_i.id_stage_i.slh_register_file_i.mem[i]);
       end
       $finish;
     end

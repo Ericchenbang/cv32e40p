@@ -1,13 +1,13 @@
 .section .text.start
 .global _start
 .type _start, @function
-.macro lv rd, addr
-    .insn i 0x03, 0x7, \rd, \addr
-.endm
+
+.include "../macros.inc"
 
 _start:
     addi    t0, zero, 0x10
     addi    s0, zero, 0x200
+    addi    s1, zero, 0x200
     sw      t0, 0(s0) 
     addi    s0, s0, 0x4
     addi    t0, t0, 0x4
@@ -36,10 +36,9 @@ _start:
     addi    s0, s0, 0x4
     addi    t0, t0, 0x4
     sw      t0, 0(s0)
-    addi    s0, zero, 0x200
 
-    lv      x0, 0(s0)
-
+    lv      x0, 0(s1)
+    
     lui     t1, 0x20000
     sw      x0, 4(t1)
 
