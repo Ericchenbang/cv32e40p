@@ -243,10 +243,12 @@ module cv32e40p_id_stage
     input logic [31:0] regfile_alu_wdata_fw_i,
 
     input logic [  3:0] slh_regfile_waddr_wb_i,
+    input logic         slh_regfile_we_wb_i,
     input logic         slh_regfile_we_wb_power_i,
     input logic [319:0] slh_regfile_wdata_wb_i, // From wb_stage: selects data from data memory
 
     input logic [  3:0] slh_regfile_alu_waddr_fw_i,
+    input logic         slh_regfile_alu_we_fw_i,
     input logic         slh_regfile_alu_we_fw_power_i,
     input logic [319:0] slh_regfile_alu_wdata_fw_i,
 
@@ -304,6 +306,9 @@ module cv32e40p_id_stage
   logic        rega_used_dec;
   logic        regb_used_dec;
   logic        regc_used_dec;
+  logic        slh_rega_used_dec;
+  logic        slh_regb_used_dec;
+  logic        slh_regc_used_dec;
 
   logic        slh_rega_used;
   logic        slh_regb_used;
@@ -465,6 +470,12 @@ module cv32e40p_id_stage
   logic        [      31:0] operand_a_fw_id;
   logic        [      31:0] operand_b_fw_id;
   logic        [      31:0] operand_c_fw_id;
+  logic        [       1:0] slh_operand_a_fw_mux_sel;
+  logic        [       1:0] slh_operand_b_fw_mux_sel;
+  logic        [       1:0] slh_operand_c_fw_mux_sel;
+  logic        [     319:0] slh_operand_a_fw_id;
+  logic        [     319:0] slh_operand_b_fw_id;
+  logic        [     319:0] slh_operand_c_fw_id;
 
   logic [31:0] operand_b, operand_b_vec;
   logic [31:0] operand_c, operand_c_vec;
@@ -502,6 +513,16 @@ module cv32e40p_id_stage
   logic        reg_d_alu_is_reg_a_id;
   logic        reg_d_alu_is_reg_b_id;
   logic        reg_d_alu_is_reg_c_id;
+
+  logic        slh_reg_d_ex_is_reg_a_id;
+  logic        slh_reg_d_ex_is_reg_b_id;
+  logic        slh_reg_d_ex_is_reg_c_id;
+  logic        slh_reg_d_wb_is_reg_a_id;
+  logic        slh_reg_d_wb_is_reg_b_id;
+  logic        slh_reg_d_wb_is_reg_c_id;
+  logic        slh_reg_d_alu_is_reg_a_id;
+  logic        slh_reg_d_alu_is_reg_b_id;
+  logic        slh_reg_d_alu_is_reg_c_id;
 
   logic is_clpx, is_subrot;
 
@@ -585,6 +606,15 @@ module cv32e40p_id_stage
   assign reg_d_alu_is_reg_b_id = (regfile_alu_waddr_fw_i == regfile_addr_rb_id) && (regb_used_dec == 1'b1) && (regfile_addr_rb_id != '0);
   assign reg_d_alu_is_reg_c_id = (regfile_alu_waddr_fw_i == regfile_addr_rc_id) && (regc_used_dec == 1'b1) && (regfile_addr_rc_id != '0);
 
+  assign slh_reg_d_ex_is_reg_a_id  = (regfile_waddr_ex_o         == slh_regfile_addr_ra_id) && (slh_rega_used_dec == 1'b1);
+  assign slh_reg_d_ex_is_reg_b_id  = (regfile_waddr_ex_o         == slh_regfile_addr_rb_id) && (slh_regb_used_dec == 1'b1);
+  assign slh_reg_d_ex_is_reg_c_id  = (regfile_waddr_ex_o         == slh_regfile_addr_rc_id) && (slh_regc_used_dec == 1'b1);
+  assign slh_reg_d_wb_is_reg_a_id  = (slh_regfile_waddr_wb_i     == slh_regfile_addr_ra_id) && (slh_rega_used_dec == 1'b1);
+  assign slh_reg_d_wb_is_reg_b_id  = (slh_regfile_waddr_wb_i     == slh_regfile_addr_rb_id) && (slh_regb_used_dec == 1'b1);
+  assign slh_reg_d_wb_is_reg_c_id  = (slh_regfile_waddr_wb_i     == slh_regfile_addr_rc_id) && (slh_regc_used_dec == 1'b1);
+  assign slh_reg_d_alu_is_reg_a_id = (slh_regfile_alu_waddr_fw_i == slh_regfile_addr_ra_id) && (slh_rega_used_dec == 1'b1);
+  assign slh_reg_d_alu_is_reg_b_id = (slh_regfile_alu_waddr_fw_i == slh_regfile_addr_rb_id) && (slh_regb_used_dec == 1'b1);
+  assign slh_reg_d_alu_is_reg_c_id = (slh_regfile_alu_waddr_fw_i == slh_regfile_addr_rc_id) && (slh_regc_used_dec == 1'b1);
 
   // kill instruction in the IF/ID stage by setting the instr_valid_id control
   // signal to 0 for instructions that are done
@@ -629,7 +659,7 @@ module cv32e40p_id_stage
   ////////////////////////////////////////////////////////
 
   // ALU_Op_a Mux
-  always_comb begin : alu_operand_a_mux
+  always_comb begin : alu_operand_operand_a_fw_ida_mux
     case (alu_op_a_mux_sel)
       OP_A_REGA_OR_FWD: alu_operand_a = operand_a_fw_id;
       OP_A_REGB_OR_FWD: alu_operand_a = operand_b_fw_id;
@@ -657,6 +687,16 @@ module cv32e40p_id_stage
       default:     operand_a_fw_id = regfile_data_ra_id;
     endcase
     ;  // case (operand_a_fw_mux_sel)
+  end
+
+  always_comb begin : slh_operand_a_fw_mux
+    case (slh_operand_a_fw_mux_sel)
+      SEL_FW_EX:   slh_operand_a_fw_id = slh_regfile_alu_wdata_fw_i;
+      SEL_FW_WB:   slh_operand_a_fw_id = slh_regfile_wdata_wb_i;
+      SEL_REGFILE: slh_operand_a_fw_id = slh_regfile_data_ra_id;
+      default:     slh_operand_a_fw_id = slh_regfile_data_ra_id;
+    endcase
+    ;  // case (slh_operand_a_fw_mux_sel)
   end
 
   //////////////////////////////////////////////////////
@@ -725,6 +765,16 @@ module cv32e40p_id_stage
     ;  // case (operand_b_fw_mux_sel)
   end
 
+  always_comb begin : slh_operand_b_fw_mux
+    case (slh_operand_b_fw_mux_sel)
+      SEL_FW_EX:   slh_operand_b_fw_id = slh_regfile_alu_wdata_fw_i;
+      SEL_FW_WB:   slh_operand_b_fw_id = slh_regfile_wdata_wb_i;
+      SEL_REGFILE: slh_operand_b_fw_id = slh_regfile_data_rb_id;
+      default:     slh_operand_b_fw_id = slh_regfile_data_rb_id;
+    endcase
+    ;  // case (slh_operand_b_fw_mux_sel)
+  end
+
 
   //////////////////////////////////////////////////////
   //   ___                                 _    ____  //
@@ -768,6 +818,16 @@ module cv32e40p_id_stage
       default:     operand_c_fw_id = regfile_data_rc_id;
     endcase
     ;  // case (operand_c_fw_mux_sel)
+  end
+
+  always_comb begin : slh_operand_c_fw_mux
+    case (slh_operand_c_fw_mux_sel)
+      SEL_FW_EX:   slh_operand_c_fw_id = slh_regfile_alu_wdata_fw_i;
+      SEL_FW_WB:   slh_operand_c_fw_id = slh_regfile_wdata_wb_i;
+      SEL_REGFILE: slh_operand_c_fw_id = slh_regfile_data_rc_id;
+      default:     slh_operand_c_fw_id = slh_regfile_data_rc_id;
+    endcase
+    ;  // case (slh_operand_c_fw_mux_sel)
   end
 
 
@@ -1073,6 +1133,9 @@ slh_register_file_i (
       .rega_used_o(rega_used_dec),
       .regb_used_o(regb_used_dec),
       .regc_used_o(regc_used_dec),
+      .slh_rega_used_o(slh_rega_used_dec),
+      .slh_regb_used_o(slh_regb_used_dec),
+      .slh_regc_used_o(slh_regc_used_dec),
 
       .reg_fp_a_o(regfile_fp_a),
       .reg_fp_b_o(regfile_fp_b),
@@ -1126,10 +1189,6 @@ slh_register_file_i (
 
       // SLH-ALU signals
       .slh_en_o(slh_en),
-
-      .slh_rega_used_o(slh_rega_used),
-      .slh_regb_used_o(slh_regb_used),
-      .slh_regc_used_o(slh_regc_used),
 
       // Register file control signals
       .regfile_mem_we_o       (regfile_we_id),
@@ -1247,7 +1306,7 @@ slh_register_file_i (
       .hwlp_targ_addr_o(hwlp_target_o),
 
       // LSU
-      .data_req_ex_i    (data_req_ex_o),
+      .data_req_ex_i    (data_req_ex_o|vdata_req_ex_o),
       .data_we_ex_i     (data_we_ex_o),
       .data_misaligned_i(data_misaligned_i),
       .data_load_event_i(data_load_event_id),
@@ -1318,9 +1377,12 @@ slh_register_file_i (
       .regfile_we_ex_i   (regfile_we_ex_o),
       .regfile_waddr_ex_i(regfile_waddr_ex_o),
       .regfile_we_wb_i   (regfile_we_wb_i),
+      .slh_regfile_we_ex_i(slh_regfile_we_ex_o),
+      .slh_regfile_we_wb_i(slh_regfile_we_wb_i),
 
       // regfile port 2
       .regfile_alu_we_fw_i(regfile_alu_we_fw_i),
+      .slh_regfile_alu_we_fw_i(slh_regfile_alu_we_fw_i),
 
       // Forwarding detection signals
       .reg_d_ex_is_reg_a_i (reg_d_ex_is_reg_a_id),
@@ -1332,11 +1394,24 @@ slh_register_file_i (
       .reg_d_alu_is_reg_a_i(reg_d_alu_is_reg_a_id),
       .reg_d_alu_is_reg_b_i(reg_d_alu_is_reg_b_id),
       .reg_d_alu_is_reg_c_i(reg_d_alu_is_reg_c_id),
+    
+      .slh_reg_d_ex_is_reg_a_i (slh_reg_d_ex_is_reg_a_id),
+      .slh_reg_d_ex_is_reg_b_i (slh_reg_d_ex_is_reg_b_id),
+      .slh_reg_d_ex_is_reg_c_i (slh_reg_d_ex_is_reg_c_id),
+      .slh_reg_d_wb_is_reg_a_i (slh_reg_d_wb_is_reg_a_id),
+      .slh_reg_d_wb_is_reg_b_i (slh_reg_d_wb_is_reg_b_id),
+      .slh_reg_d_wb_is_reg_c_i (slh_reg_d_wb_is_reg_c_id),
+      .slh_reg_d_alu_is_reg_a_i(slh_reg_d_alu_is_reg_a_id),
+      .slh_reg_d_alu_is_reg_b_i(slh_reg_d_alu_is_reg_b_id),
+      .slh_reg_d_alu_is_reg_c_i(slh_reg_d_alu_is_reg_c_id),
 
       // Forwarding signals
       .operand_a_fw_mux_sel_o(operand_a_fw_mux_sel),
       .operand_b_fw_mux_sel_o(operand_b_fw_mux_sel),
       .operand_c_fw_mux_sel_o(operand_c_fw_mux_sel),
+      .slh_operand_a_fw_mux_sel_o(slh_operand_a_fw_mux_sel),
+      .slh_operand_b_fw_mux_sel_o(slh_operand_b_fw_mux_sel),
+      .slh_operand_c_fw_mux_sel_o(slh_operand_c_fw_mux_sel),
 
       // Stall signals
       .halt_if_o(halt_if),
@@ -1615,9 +1690,9 @@ slh_register_file_i (
 
         slh_en_ex_o <= slh_en;
         if (slh_en) begin
-          slh_operand_a_ex_o <= slh_regfile_data_ra_id;
-          slh_operand_b_ex_o <= slh_regfile_data_rb_id;
-          slh_operand_c_ex_o <= slh_regfile_data_rc_id;
+          slh_operand_a_ex_o <= slh_operand_a_fw_id;
+          slh_operand_b_ex_o <= slh_operand_b_fw_id;
+          slh_operand_c_ex_o <= slh_operand_c_fw_id;
         end
 
         mult_en_ex_o <= mult_en;
@@ -1701,6 +1776,8 @@ slh_register_file_i (
 
         data_req_ex_o        <= 1'b0;
 
+        vdata_req_ex_o        <= 1'b0;
+
         data_load_event_ex_o <= 1'b0;
 
         data_misaligned_ex_o <= 1'b0;
@@ -1714,6 +1791,8 @@ slh_register_file_i (
         mult_en_ex_o         <= 1'b0;
 
         alu_en_ex_o          <= 1'b1;
+
+        slh_en_ex_o          <= 1'b0;
 
       end else if (csr_access_ex_o) begin
         //In the EX stage there was a CSR access, to avoid multiple

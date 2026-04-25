@@ -732,10 +732,12 @@ module cv32e40p_core
       .regfile_alu_wdata_fw_i   (regfile_alu_wdata_fw),
 
       .slh_regfile_waddr_wb_i   (regfile_waddr_fw_wb_o[3:0]),
+      .slh_regfile_we_wb_i      (slh_regfile_we_wb),  // write enable for the slh register file
       .slh_regfile_we_wb_power_i(slh_regfile_we_wb_power),
       .slh_regfile_wdata_wb_i   (regfile_wdata),
 
       .slh_regfile_alu_waddr_fw_i(0),
+      .slh_regfile_alu_we_fw_i   (0),
       .slh_regfile_alu_we_fw_power_i(0),
       .slh_regfile_alu_wdata_fw_i(0),
 

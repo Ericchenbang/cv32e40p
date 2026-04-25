@@ -168,10 +168,17 @@ module cv32e40p_controller import cv32e40p_pkg::*;
   input  logic        regfile_we_wb_i,            // FW: write enable from  WB stage
   input  logic        regfile_alu_we_fw_i,        // FW: ALU/MUL write enable from  EX stage
 
+  input  logic        slh_regfile_we_ex_i,            // FW: write enable from  EX stage
+  input  logic        slh_regfile_we_wb_i,            // FW: write enable from  WB stage
+  input  logic        slh_regfile_alu_we_fw_i,        // FW: ALU/MUL write enable from  EX stage
+
   // forwarding signals
   output logic [1:0]  operand_a_fw_mux_sel_o,     // regfile ra data selector form ID stage
   output logic [1:0]  operand_b_fw_mux_sel_o,     // regfile rb data selector form ID stage
   output logic [1:0]  operand_c_fw_mux_sel_o,     // regfile rc data selector form ID stage
+  output logic [1:0]  slh_operand_a_fw_mux_sel_o, // regfile va data selector form ID stage
+  output logic [1:0]  slh_operand_b_fw_mux_sel_o, // regfile vb data selector form ID stage
+  output logic [1:0]  slh_operand_c_fw_mux_sel_o, // regfile vc data selector form ID stage
 
   // forwarding detection signals
   input logic         reg_d_ex_is_reg_a_i,
@@ -183,6 +190,16 @@ module cv32e40p_controller import cv32e40p_pkg::*;
   input logic         reg_d_alu_is_reg_a_i,
   input logic         reg_d_alu_is_reg_b_i,
   input logic         reg_d_alu_is_reg_c_i,
+
+  input logic         slh_reg_d_ex_is_reg_a_i,
+  input logic         slh_reg_d_ex_is_reg_b_i,
+  input logic         slh_reg_d_ex_is_reg_c_i,
+  input logic         slh_reg_d_wb_is_reg_a_i,
+  input logic         slh_reg_d_wb_is_reg_b_i,
+  input logic         slh_reg_d_wb_is_reg_c_i,
+  input logic         slh_reg_d_alu_is_reg_a_i,
+  input logic         slh_reg_d_alu_is_reg_b_i,
+  input logic         slh_reg_d_alu_is_reg_c_i,
 
   // stall signals
   output logic        halt_if_o,
@@ -1350,11 +1367,18 @@ endgenerate
 
     // Stall because of load operation
     if (
+        (
           ( (data_req_ex_i == 1'b1) && (regfile_we_ex_i == 1'b1) ||
            (wb_ready_i == 1'b0) && (regfile_we_wb_i == 1'b1)
           ) &&
           ( (reg_d_ex_is_reg_a_i == 1'b1) || (reg_d_ex_is_reg_b_i == 1'b1) || (reg_d_ex_is_reg_c_i == 1'b1) ||
             (is_decoding_o && (regfile_we_id_i && !data_misaligned_i) && (regfile_waddr_ex_i == regfile_alu_waddr_id_i)) )
+        ) || (
+          ( (data_req_ex_i == 1'b1) && (slh_regfile_we_ex_i == 1'b1) ||
+           (wb_ready_i == 1'b0) && (slh_regfile_we_wb_i == 1'b1)
+          ) &&
+          ( (slh_reg_d_ex_is_reg_a_i == 1'b1) || (slh_reg_d_ex_is_reg_b_i == 1'b1) || (slh_reg_d_ex_is_reg_c_i == 1'b1) )
+        )
        )
     begin
       deassert_we_o   = 1'b1;
@@ -1396,6 +1420,9 @@ endgenerate
     operand_a_fw_mux_sel_o = SEL_REGFILE;
     operand_b_fw_mux_sel_o = SEL_REGFILE;
     operand_c_fw_mux_sel_o = SEL_REGFILE;
+    slh_operand_a_fw_mux_sel_o = SEL_REGFILE;
+    slh_operand_b_fw_mux_sel_o = SEL_REGFILE;
+    slh_operand_c_fw_mux_sel_o = SEL_REGFILE;
 
     // Forwarding WB -> ID
     if (regfile_we_wb_i == 1'b1)
@@ -1408,6 +1435,16 @@ endgenerate
         operand_c_fw_mux_sel_o = SEL_FW_WB;
     end
 
+    if (slh_regfile_we_wb_i == 1'b1)
+    begin
+      if (slh_reg_d_wb_is_reg_a_i == 1'b1)
+        slh_operand_a_fw_mux_sel_o = SEL_FW_WB;
+      if (slh_reg_d_wb_is_reg_b_i == 1'b1)
+        slh_operand_b_fw_mux_sel_o = SEL_FW_WB;
+      if (slh_reg_d_wb_is_reg_c_i == 1'b1)
+        slh_operand_c_fw_mux_sel_o = SEL_FW_WB;
+    end
+
     // Forwarding EX -> ID
     if (regfile_alu_we_fw_i == 1'b1)
     begin
@@ -1417,6 +1454,16 @@ endgenerate
        operand_b_fw_mux_sel_o = SEL_FW_EX;
      if (reg_d_alu_is_reg_c_i == 1'b1)
        operand_c_fw_mux_sel_o = SEL_FW_EX;
+    end
+
+    if (slh_regfile_alu_we_fw_i == 1'b1)
+    begin
+     if (slh_reg_d_alu_is_reg_a_i == 1'b1)
+       slh_operand_a_fw_mux_sel_o = SEL_FW_EX;
+     if (slh_reg_d_alu_is_reg_b_i == 1'b1)
+       slh_operand_b_fw_mux_sel_o = SEL_FW_EX;
+     if (slh_reg_d_alu_is_reg_c_i == 1'b1)
+       slh_operand_c_fw_mux_sel_o = SEL_FW_EX;
     end
 
     // for misaligned memory accesses

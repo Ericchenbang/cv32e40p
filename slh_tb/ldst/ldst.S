@@ -38,8 +38,6 @@ _start:
     sw      t0, 0(s0)
 
     lv      x0, 0(s1)
-    addi    x0, x0, 0
-    addi    x0, x0, 0
     sv      x0, 40(s1)
     
     lui     t1, 0x20000

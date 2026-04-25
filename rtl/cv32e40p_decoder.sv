@@ -414,7 +414,7 @@ module cv32e40p_decoder
             data_we_o          = 1'b1;
             rega_used_o        = 1'b1;
             slh_en             = 1'b1;
-            slh_rega_used_o    = 1'b1;
+            slh_regb_used_o    = 1'b1;
             alu_operator_o     = ALU_ADD;
             // offset from immediate
             imm_b_mux_sel_o    = IMMB_S;
