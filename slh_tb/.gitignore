@@ -1,0 +1,5 @@
+csrc
+*.fsdb
+vc_hdrs.h
+ucli.key
+*.rc

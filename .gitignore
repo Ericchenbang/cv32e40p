@@ -33,4 +33,8 @@ simv.daidir
 vc_hdrs.h
 ucli.key
 *.fsdb
+*rc
 csrc
+verdiLog
+nWaveLog
+novas.conf

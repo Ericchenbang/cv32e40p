@@ -107,6 +107,7 @@ module cv32e40p_id_stage
 
     output logic [5:0] regfile_waddr_ex_o,
     output logic       regfile_we_ex_o,
+    output logic       slh_regfile_we_ex_o,
 
     output logic [5:0] regfile_alu_waddr_ex_o,
     output logic       regfile_alu_we_ex_o,
@@ -185,6 +186,7 @@ module cv32e40p_id_stage
     output logic [1:0] data_sign_ext_ex_o,
     output logic [1:0] data_reg_offset_ex_o,
     output logic       data_load_event_ex_o,
+    output logic       vdata_req_ex_o,
 
     output logic data_misaligned_ex_o,
 
@@ -233,6 +235,14 @@ module cv32e40p_id_stage
     input logic        regfile_alu_we_fw_i,
     input logic        regfile_alu_we_fw_power_i,
     input logic [31:0] regfile_alu_wdata_fw_i,
+
+    input logic [  3:0] slh_regfile_waddr_wb_i,
+    input logic         slh_regfile_we_wb_power_i,
+    input logic [319:0] slh_regfile_wdata_wb_i, // From wb_stage: selects data from data memory
+
+    input logic [  3:0] slh_regfile_alu_waddr_fw_i,
+    input logic         slh_regfile_alu_we_fw_power_i,
+    input logic [319:0] slh_regfile_alu_wdata_fw_i,
 
     // from ALU
     input  logic        mult_multicycle_i,    // when we need multiple cycles in the multiplier and use op c as storage
@@ -395,6 +405,7 @@ module cv32e40p_id_stage
   // Register Write Control
   logic regfile_we_id;
   logic regfile_alu_waddr_mux_sel;
+  logic slh_regfile_we_id;
 
   // Data Memory Control
   logic data_we_id;
@@ -403,6 +414,7 @@ module cv32e40p_id_stage
   logic [1:0] data_reg_offset_id;
   logic data_req_id;
   logic data_load_event_id;
+  logic vdata_req_id;
 
   // Atomic memory instruction
   logic [5:0] atop_id;
@@ -962,6 +974,32 @@ module cv32e40p_id_stage
       .we_b_i   (regfile_alu_we_fw_power_i)
   );
 
+  // outports wire
+wire [319:0] 	vdata_a_o;
+wire [319:0] 	vdata_b_o;
+wire [319:0] 	vdata_c_o;
+
+cv32e40p_slh_register_file #(
+	.ADDR_WIDTH 	( 4    ),
+	.DATA_WIDTH 	( 320  ))
+slh_register_file_i (
+	.clk       	( clk        ),
+	.rst_n     	( rst_n      ),
+	.vaddr_a_i 	( 0  ),
+	.vdata_a_o 	( vdata_a_o  ),
+	.vaddr_b_i 	( 1  ),
+	.vdata_b_o 	( vdata_b_o  ),
+	.vaddr_c_i 	( 2  ),
+	.vdata_c_o 	( vdata_c_o  ),
+	.waddr_a_i 	( slh_regfile_waddr_wb_i  ),
+	.wdata_a_i 	( slh_regfile_wdata_wb_i  ),
+	.we_a_i    	( slh_regfile_we_wb_power_i     ),
+	.waddr_b_i 	( slh_regfile_alu_waddr_fw_i ),
+	.wdata_b_i 	( slh_regfile_alu_wdata_fw_i  ),
+	.we_b_i    	( slh_regfile_alu_we_fw_power_i )
+);
+
+
 
   ///////////////////////////////////////////////
   //  ____  _____ ____ ___  ____  _____ ____   //
@@ -1063,6 +1101,7 @@ module cv32e40p_id_stage
       .regfile_alu_we_o       (regfile_alu_we_id),
       .regfile_alu_we_dec_o   (regfile_alu_we_dec_id),
       .regfile_alu_waddr_sel_o(regfile_alu_waddr_mux_sel),
+      .slh_regfile_mem_we_o   (slh_regfile_we_id),
 
       // CSR control signals
       .csr_access_o      (csr_access),
@@ -1078,6 +1117,7 @@ module cv32e40p_id_stage
       .data_sign_extension_o(data_sign_ext_id),
       .data_reg_offset_o    (data_reg_offset_id),
       .data_load_event_o    (data_load_event_id),
+      .vdata_req_o          (vdata_req_id),
 
       // Atomic memory access
       .atop_o(atop_id),
@@ -1467,6 +1507,7 @@ module cv32e40p_id_stage
 
       regfile_waddr_ex_o     <= 6'b0;
       regfile_we_ex_o        <= 1'b0;
+      slh_regfile_we_ex_o    <= 1'b0;
 
       regfile_alu_waddr_ex_o <= 6'b0;
       regfile_alu_we_ex_o    <= 1'b0;
@@ -1482,6 +1523,7 @@ module cv32e40p_id_stage
       data_req_ex_o          <= 1'b0;
       data_load_event_ex_o   <= 1'b0;
       atop_ex_o              <= 5'b0;
+      vdata_req_ex_o         <= 1'b0;
 
       data_misaligned_ex_o   <= 1'b0;
 
@@ -1562,8 +1604,9 @@ module cv32e40p_id_stage
           apu_waddr_ex_o    <= apu_waddr;
         end
 
-        regfile_we_ex_o <= regfile_we_id;
-        if (regfile_we_id) begin
+        regfile_we_ex_o     <= regfile_we_id;
+        slh_regfile_we_ex_o <= slh_regfile_we_id;
+        if (regfile_we_id||slh_regfile_we_id) begin
           regfile_waddr_ex_o <= regfile_waddr_id;
         end
 
@@ -1578,7 +1621,8 @@ module cv32e40p_id_stage
         csr_op_ex_o          <= csr_op;
 
         data_req_ex_o        <= data_req_id;
-        if (data_req_id) begin  // only needed for LSU when there is an active request
+        vdata_req_ex_o       <= vdata_req_id;
+        if (data_req_id||vdata_req_id) begin  // only needed for LSU when there is an active request
           data_we_ex_o         <= data_we_id;
           data_type_ex_o       <= data_type_id;
           data_sign_ext_ex_o   <= data_sign_ext_id;
@@ -1601,6 +1645,8 @@ module cv32e40p_id_stage
         // so we set all write enables to 0, but unstall the pipe
 
         regfile_we_ex_o      <= 1'b0;
+
+        slh_regfile_we_ex_o  <= 1'b0;
 
         regfile_alu_we_ex_o  <= 1'b0;
 

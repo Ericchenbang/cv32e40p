@@ -123,7 +123,7 @@ module cv32e40p_ex_stage
     input  logic [             31:0]       apu_result_i,
 
     input logic        lsu_en_i,
-    input logic [31:0] lsu_rdata_i,
+    input logic [319:0] lsu_rdata_i,
 
     // input from ID stage
     input logic       branch_in_ex_i,
@@ -132,6 +132,7 @@ module cv32e40p_ex_stage
 
     // directly passed through to WB stage, not used in EX
     input logic       regfile_we_i,
+    input logic       slh_regfile_we_i,
     input logic [5:0] regfile_waddr_i,
 
     // CSR access
@@ -139,10 +140,12 @@ module cv32e40p_ex_stage
     input logic [31:0] csr_rdata_i,
 
     // Output of EX stage pipeline
-    output logic [ 5:0] regfile_waddr_wb_o,
-    output logic        regfile_we_wb_o,
-    output logic        regfile_we_wb_power_o,
-    output logic [31:0] regfile_wdata_wb_o,
+    output logic [  5:0] regfile_waddr_wb_o,
+    output logic         regfile_we_wb_o,
+    output logic         regfile_we_wb_power_o,
+    output logic         slh_regfile_we_wb_o,
+    output logic         slh_regfile_we_wb_power_o,
+    output logic [319:0] regfile_wdata_wb_o,
 
     // Forwarding ports : to ID stage
     output logic [ 5:0] regfile_alu_waddr_fw_o,
@@ -169,6 +172,7 @@ module cv32e40p_ex_stage
   logic                        alu_cmp_result;
 
   logic                        regfile_we_lsu;
+  logic                        slh_regfile_we_lsu;
   logic [                 5:0] regfile_waddr_lsu;
 
   logic                        wb_contention;
@@ -227,10 +231,16 @@ module cv32e40p_ex_stage
   always_comb begin
     regfile_we_wb_o       = 1'b0;
     regfile_we_wb_power_o = 1'b0;
+    slh_regfile_we_wb_o   = 1'b0;
+    slh_regfile_we_wb_power_o = 1'b0;
     regfile_waddr_wb_o    = regfile_waddr_lsu;
     regfile_wdata_wb_o    = lsu_rdata_i;
     wb_contention_lsu     = 1'b0;
 
+    if (slh_regfile_we_lsu) begin
+      slh_regfile_we_wb_o       = 1'b1;
+      slh_regfile_we_wb_power_o = (COREV_PULP == 0) ? 1'b1 : ~data_misaligned_ex_i & wb_ready_i;
+    end
     if (regfile_we_lsu) begin
       regfile_we_wb_o       = 1'b1;
       regfile_we_wb_power_o = (COREV_PULP == 0) ? 1'b1 : ~data_misaligned_ex_i & wb_ready_i;
@@ -242,7 +252,7 @@ module cv32e40p_ex_stage
       regfile_we_wb_o       = 1'b1;
       regfile_we_wb_power_o = 1'b1;
       regfile_waddr_wb_o    = apu_waddr;
-      regfile_wdata_wb_o    = apu_result;
+      regfile_wdata_wb_o    = {288'd0, apu_result};
     end
   end
 
@@ -453,17 +463,20 @@ module cv32e40p_ex_stage
     if (~rst_n) begin
       regfile_waddr_lsu <= '0;
       regfile_we_lsu    <= 1'b0;
+      slh_regfile_we_lsu<= 1'b0;
     end else begin
       if (ex_valid_o) // wb_ready_i is implied
       begin
-        regfile_we_lsu <= regfile_we_i & ~lsu_err_i;
-        if (regfile_we_i & ~lsu_err_i) begin
+        regfile_we_lsu     <= regfile_we_i & ~lsu_err_i;
+        slh_regfile_we_lsu <= slh_regfile_we_i & ~lsu_err_i;
+        if ((regfile_we_i|slh_regfile_we_i) & ~lsu_err_i) begin
           regfile_waddr_lsu <= regfile_waddr_i;
         end
       end else if (wb_ready_i) begin
         // we are ready for a new instruction, but there is none available,
         // so we just flush the current one out of the pipe
-        regfile_we_lsu <= 1'b0;
+        regfile_we_lsu     <= 1'b0;
+        slh_regfile_we_lsu <= 1'b0;
       end
     end
   end
