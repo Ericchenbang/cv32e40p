@@ -125,6 +125,11 @@ module cv32e40p_ex_stage
     input logic        lsu_en_i,
     input logic [319:0] lsu_rdata_i,
 
+    input logic         slh_en_i,
+    input logic [319:0] slh_operand_a_i,
+    input logic [319:0] slh_operand_b_i,
+    input logic [319:0] slh_operand_c_i,
+
     // input from ID stage
     input logic       branch_in_ex_i,
     input logic [5:0] regfile_alu_waddr_i,

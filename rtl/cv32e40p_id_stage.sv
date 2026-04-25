@@ -105,6 +105,10 @@ module cv32e40p_id_stage
     output logic [ 1:0] imm_vec_ext_ex_o,
     output logic [ 1:0] alu_vec_mode_ex_o,
 
+    output logic [319:0] slh_operand_a_ex_o,
+    output logic [319:0] slh_operand_b_ex_o,
+    output logic [319:0] slh_operand_c_ex_o,
+
     output logic [5:0] regfile_waddr_ex_o,
     output logic       regfile_we_ex_o,
     output logic       slh_regfile_we_ex_o,
@@ -118,6 +122,8 @@ module cv32e40p_id_stage
     output logic              alu_is_clpx_ex_o,
     output logic              alu_is_subrot_ex_o,
     output logic        [1:0] alu_clpx_shift_ex_o,
+
+    output logic              slh_en_ex_o,
 
     // MUL
     output mul_opcode_e        mult_operator_ex_o,
@@ -299,6 +305,10 @@ module cv32e40p_id_stage
   logic        regb_used_dec;
   logic        regc_used_dec;
 
+  logic        slh_rega_used;
+  logic        slh_regb_used;
+  logic        slh_regc_used;
+
   logic        branch_taken_ex;
   logic [ 1:0] ctrl_transfer_insn_in_id;
   logic [ 1:0] ctrl_transfer_insn_in_dec;
@@ -347,6 +357,10 @@ module cv32e40p_id_stage
   logic [ 5:0] regfile_addr_rb_id;
   logic [ 5:0] regfile_addr_rc_id;
 
+  logic [ 3:0] slh_regfile_addr_ra_id;
+  logic [ 3:0] slh_regfile_addr_rb_id;
+  logic [ 3:0] slh_regfile_addr_rc_id;
+
   logic        regfile_fp_a;
   logic        regfile_fp_b;
   logic        regfile_fp_c;
@@ -359,6 +373,11 @@ module cv32e40p_id_stage
   logic [31:0] regfile_data_ra_id;
   logic [31:0] regfile_data_rb_id;
   logic [31:0] regfile_data_rc_id;
+
+  logic [319:0] slh_regfile_data_ra_id;
+  logic [319:0] slh_regfile_data_rb_id;
+  logic [319:0] slh_regfile_data_rc_id;
+  logic slh_en;
 
   // ALU Control
   logic alu_en;
@@ -531,6 +550,10 @@ module cv32e40p_id_stage
   //---------------------------------------------------------------------------
   assign regfile_addr_ra_id = {regfile_fp_a, instr[REG_S1_MSB:REG_S1_LSB]};
   assign regfile_addr_rb_id = {regfile_fp_b, instr[REG_S2_MSB:REG_S2_LSB]};
+
+  assign slh_regfile_addr_ra_id = instr[REG_S1_MSB-1:REG_S1_LSB];
+  assign slh_regfile_addr_rb_id = instr[REG_S2_MSB-1:REG_S2_LSB];
+  assign slh_regfile_addr_rc_id = instr[REG_S4_MSB-1:REG_S4_LSB];
 
   // register C mux
   always_comb begin
@@ -974,26 +997,31 @@ module cv32e40p_id_stage
       .we_b_i   (regfile_alu_we_fw_power_i)
   );
 
-  // outports wire
-wire [319:0] 	vdata_a_o;
-wire [319:0] 	vdata_b_o;
-wire [319:0] 	vdata_c_o;
-
 cv32e40p_slh_register_file #(
 	.ADDR_WIDTH 	( 4    ),
 	.DATA_WIDTH 	( 320  ))
 slh_register_file_i (
 	.clk       	( clk        ),
 	.rst_n     	( rst_n      ),
-	.vaddr_a_i 	( 0  ),
-	.vdata_a_o 	( vdata_a_o  ),
-	.vaddr_b_i 	( 1  ),
-	.vdata_b_o 	( vdata_b_o  ),
-	.vaddr_c_i 	( 2  ),
-	.vdata_c_o 	( vdata_c_o  ),
+  
+  // Read port a
+	.vaddr_a_i 	( slh_regfile_addr_ra_id),
+	.vdata_a_o 	( slh_regfile_data_ra_id  ),
+
+  // Read port b
+	.vaddr_b_i 	( slh_regfile_addr_rb_id),
+	.vdata_b_o 	( slh_regfile_data_rb_id  ),
+
+  // Read port c
+	.vaddr_c_i 	( slh_regfile_addr_rc_id),
+	.vdata_c_o 	( slh_regfile_data_rc_id  ),
+
+  // Write port a
 	.waddr_a_i 	( slh_regfile_waddr_wb_i  ),
 	.wdata_a_i 	( slh_regfile_wdata_wb_i  ),
 	.we_a_i    	( slh_regfile_we_wb_power_i     ),
+
+  // Write port b
 	.waddr_b_i 	( slh_regfile_alu_waddr_fw_i ),
 	.wdata_b_i 	( slh_regfile_alu_wdata_fw_i  ),
 	.we_b_i    	( slh_regfile_alu_we_fw_power_i )
@@ -1095,6 +1123,13 @@ slh_register_file_i (
       .apu_op_o     (apu_op),
       .apu_lat_o    (apu_lat),
       .fp_rnd_mode_o(fp_rnd_mode),
+
+      // SLH-ALU signals
+      .slh_en_o(slh_en),
+
+      .slh_rega_used_o(slh_rega_used),
+      .slh_regb_used_o(slh_regb_used),
+      .slh_regc_used_o(slh_regc_used),
 
       // Register file control signals
       .regfile_mem_we_o       (regfile_we_id),
@@ -1478,6 +1513,11 @@ slh_register_file_i (
       alu_is_clpx_ex_o       <= 1'b0;
       alu_is_subrot_ex_o     <= 1'b0;
 
+      slh_en_ex_o            <= '0;
+      slh_operand_a_ex_o     <= '0;
+      slh_operand_b_ex_o     <= '0;
+      slh_operand_c_ex_o     <= '0;
+
       mult_operator_ex_o     <= MUL_MAC32;
       mult_operand_a_ex_o    <= '0;
       mult_operand_b_ex_o    <= '0;
@@ -1571,6 +1611,13 @@ slh_register_file_i (
           alu_is_clpx_ex_o    <= is_clpx;
           alu_clpx_shift_ex_o <= instr[14:13];
           alu_is_subrot_ex_o  <= is_subrot;
+        end
+
+        slh_en_ex_o <= slh_en;
+        if (slh_en) begin
+          slh_operand_a_ex_o <= slh_regfile_data_ra_id;
+          slh_operand_b_ex_o <= slh_regfile_data_rb_id;
+          slh_operand_c_ex_o <= slh_regfile_data_rc_id;
         end
 
         mult_en_ex_o <= mult_en;

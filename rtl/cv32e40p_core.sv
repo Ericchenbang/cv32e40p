@@ -225,6 +225,11 @@ module cv32e40p_core
   logic                                     perf_apu_dep;
   logic                                     perf_apu_wb;
 
+  logic         slh_en_ex;
+  logic [319:0] slh_operand_a_ex;
+  logic [319:0] slh_operand_b_ex;
+  logic [319:0] slh_operand_c_ex;
+
   // Register Write Control
   logic        [                 5:0]       regfile_waddr_ex;
   logic                                     regfile_we_ex;
@@ -594,6 +599,10 @@ module cv32e40p_core
       .alu_is_subrot_ex_o (alu_is_subrot_ex),
       .alu_clpx_shift_ex_o(alu_clpx_shift_ex),
 
+      .slh_operand_a_ex_o (slh_operand_a_ex),
+      .slh_operand_b_ex_o (slh_operand_b_ex),
+      .slh_operand_c_ex_o (slh_operand_c_ex),
+
       .regfile_waddr_ex_o (regfile_waddr_ex),
       .regfile_we_ex_o    (regfile_we_ex),
       .slh_regfile_we_ex_o(slh_regfile_we_ex),
@@ -640,6 +649,8 @@ module cv32e40p_core
       .apu_write_dep_i        (apu_write_dep),
       .apu_perf_dep_o         (perf_apu_dep),
       .apu_busy_i             (apu_busy_o),
+
+      .slh_en_ex_o(slh_en_ex),
 
       // CSR ID/EX
       .csr_access_ex_o      (csr_access_ex),
@@ -846,6 +857,11 @@ module cv32e40p_core
       .apu_result_i  (apu_result_i),
       .apu_flags_i   (apu_flags_i),
 
+      .slh_en_i(slh_en_ex),
+      .slh_operand_a_i(slh_operand_a_ex),
+      .slh_operand_b_i(slh_operand_b_ex),
+      .slh_operand_c_i(slh_operand_c_ex),
+
       .lsu_en_i   (data_req_ex||vdata_req_ex),
       .lsu_rdata_i(lsu_rdata),
 
@@ -925,6 +941,7 @@ module cv32e40p_core
       .data_atop_ex_i      (data_atop_ex),
       .data_type_ex_i      (data_type_ex),
       .data_wdata_ex_i     (alu_operand_c_ex),
+      .data_vdata_ex_i     (slh_operand_b_ex),
       .data_reg_offset_ex_i(data_reg_offset_ex),
       .data_load_event_ex_i(data_load_event_ex),
       .data_sign_ext_ex_i  (data_sign_ext_ex),  // sign extension

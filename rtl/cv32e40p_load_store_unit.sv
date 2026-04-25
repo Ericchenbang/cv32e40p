@@ -30,7 +30,8 @@ module cv32e40p_load_store_unit #(
     // signals from ex stage
     input logic        data_we_ex_i,  // write enable                      -> from ex stage
     input logic [ 1:0] data_type_ex_i,  // Data type word, halfword, byte    -> from ex stage
-    input logic [319:0] data_wdata_ex_i,     // MODIFIED: 320 bits wide           -> from ex stage
+    input logic [31:0] data_wdata_ex_i,     // Data to store          -> from ex stage
+    input logic [319:0] data_vdata_ex_i,     // MODIFIED: 320 bits wide           -> from ex stage
     input logic [ 1:0] data_reg_offset_ex_i,  // offset inside register for stores -> from ex stage
     input logic        data_load_event_ex_i,  // load event                        -> from ex stage
     input logic [ 1:0] data_sign_ext_ex_i,  // sign extension                    -> from ex stage
@@ -104,7 +105,6 @@ module cv32e40p_load_store_unit #(
   // MODIFICATION: 320-bit Burst FSM Signals
   logic is_burst;
   logic [3:0] req_cnt_q;
-  logic [3:0] resp_cnt_q;
   logic [319:0] rdata_320_q;
   logic lsu_ready_wb_normal;
   logic lsu_ready_wb_burst;
@@ -174,7 +174,7 @@ module cv32e40p_load_store_unit #(
   assign wdata_offset = data_addr_int[1:0] - data_reg_offset_ex_i[1:0];
   always_comb begin
     case (wdata_offset)
-      2'b00: normal_wdata = data_wdata_ex_i[31:0];
+      2'b00: normal_wdata = data_wdata_ex_i;
       2'b01: normal_wdata = {data_wdata_ex_i[23:0], data_wdata_ex_i[31:24]};
       2'b10: normal_wdata = {data_wdata_ex_i[15:0], data_wdata_ex_i[31:16]};
       2'b11: normal_wdata = {data_wdata_ex_i[7:0], data_wdata_ex_i[31:8]};
@@ -183,7 +183,7 @@ module cv32e40p_load_store_unit #(
   end
 
   // MODIFICATION: Support writing chunks if data_we_ex_i is high during 2'b11
-  assign data_wdata = is_burst ? data_wdata_ex_i[{req_cnt_q, 5'd0} +: 32] : normal_wdata;
+  assign data_wdata = is_burst ? data_vdata_ex_i[{req_cnt_q, 5'd0} +: 32] : normal_wdata;
 
   // FF for rdata alignment and sign-extension
   always_ff @(posedge clk, negedge rst_n) begin
@@ -319,22 +319,21 @@ module cv32e40p_load_store_unit #(
 
   // MODIFICATION: Build combinational array for immediate 320b output on last beat
   always_comb begin
-      data_rdata_ex_o_comb = rdata_320_q;
-      if (is_burst && resp_valid) begin
-          case (resp_cnt_q)
-              0: data_rdata_ex_o_comb[31:0]     = resp_rdata;
-              1: data_rdata_ex_o_comb[63:32]    = resp_rdata;
-              2: data_rdata_ex_o_comb[95:64]    = resp_rdata;
-              3: data_rdata_ex_o_comb[127:96]   = resp_rdata;
-              4: data_rdata_ex_o_comb[159:128]  = resp_rdata;
-              5: data_rdata_ex_o_comb[191:160]  = resp_rdata;
-              6: data_rdata_ex_o_comb[223:192]  = resp_rdata;
-              7: data_rdata_ex_o_comb[255:224]  = resp_rdata;
-              8: data_rdata_ex_o_comb[287:256]  = resp_rdata;
-              9: data_rdata_ex_o_comb[319:288]  = resp_rdata;
-              default: ;
-          endcase
-      end
+    data_rdata_ex_o_comb = rdata_320_q;
+    if (is_burst && resp_valid && (~data_we_ex_i)) begin
+      case (req_cnt_q)
+      1:  data_rdata_ex_o_comb[31:0]    = resp_rdata;
+      2:  data_rdata_ex_o_comb[63:32]   = resp_rdata;
+      3:  data_rdata_ex_o_comb[95:64]   = resp_rdata;
+      4:  data_rdata_ex_o_comb[127:96]  = resp_rdata;
+      5:  data_rdata_ex_o_comb[159:128] = resp_rdata;
+      6:  data_rdata_ex_o_comb[191:160] = resp_rdata;
+      7:  data_rdata_ex_o_comb[223:192] = resp_rdata;
+      8:  data_rdata_ex_o_comb[255:224] = resp_rdata;
+      9:  data_rdata_ex_o_comb[287:256] = resp_rdata;
+      10: data_rdata_ex_o_comb[319:288] = resp_rdata;
+      endcase
+    end
   end
 
   // MODIFICATION: 320-bit output to register file
@@ -394,16 +393,12 @@ module cv32e40p_load_store_unit #(
   always_ff @(posedge clk or negedge rst_n) begin
       if (!rst_n) begin
           req_cnt_q <= '0;
-          resp_cnt_q <= '0;
       end else begin
         if (is_burst) begin
-          if (trans_valid && trans_ready) 
-            req_cnt_q <= (req_cnt_q == 9) ? '0 : req_cnt_q + 1;
-          if (resp_valid)
-            resp_cnt_q <= (resp_cnt_q == 9) ? '0 : resp_cnt_q + 1;
+          if (resp_valid) 
+            req_cnt_q <= (req_cnt_q == 10) ? '0 : req_cnt_q + 1;
         end else if (lsu_ready_ex_o && data_req_ex_i) begin
           req_cnt_q <= '0;
-          resp_cnt_q <= '0;
         end 
       end
   end
@@ -412,19 +407,19 @@ module cv32e40p_load_store_unit #(
       if (!rst_n) begin
         rdata_320_q <= '0;
       end else begin
-        if (is_burst) begin
+        if (is_burst && (~data_we_ex_i)) begin
           if (resp_valid) begin
-            case (resp_cnt_q)
-            4'd0: rdata_320_q[31:0]     <= resp_rdata;
-            4'd1: rdata_320_q[63:32]    <= resp_rdata;
-            4'd2: rdata_320_q[95:64]    <= resp_rdata;
-            4'd3: rdata_320_q[127:96]   <= resp_rdata;
-            4'd4: rdata_320_q[159:128]  <= resp_rdata;
-            4'd5: rdata_320_q[191:160]  <= resp_rdata;
-            4'd6: rdata_320_q[223:192]  <= resp_rdata;
-            4'd7: rdata_320_q[255:224]  <= resp_rdata;
-            4'd8: rdata_320_q[287:256]  <= resp_rdata;
-            4'd9: rdata_320_q[319:288]  <= resp_rdata;
+            case (req_cnt_q)
+            1:  rdata_320_q[31:0]     <= resp_rdata;
+            2:  rdata_320_q[63:32]    <= resp_rdata;
+            3:  rdata_320_q[95:64]    <= resp_rdata;
+            4:  rdata_320_q[127:96]   <= resp_rdata;
+            5:  rdata_320_q[159:128]  <= resp_rdata;
+            6:  rdata_320_q[191:160]  <= resp_rdata;
+            7:  rdata_320_q[223:192]  <= resp_rdata;
+            8:  rdata_320_q[255:224]  <= resp_rdata;
+            9:  rdata_320_q[287:256]  <= resp_rdata;
+            10: rdata_320_q[319:288]  <= resp_rdata;
             endcase
           end
         end
@@ -454,7 +449,7 @@ module cv32e40p_load_store_unit #(
   // LSU WB stage is ready if it is not being used (i.e. no outstanding transfers, cnt_q = 0),
   // or if it WB stage is being used and the awaited response arrives (resp_rvalid).
   assign lsu_ready_wb_normal = (cnt_q == 2'b00) ? 1'b1 : resp_valid;
-  assign lsu_ready_wb_burst = (data_req_ex_i == 1'b0 ? 1'b1 : (resp_cnt_q == 9 && resp_valid));
+  assign lsu_ready_wb_burst = (cnt_q == 2'b00) ? 1'b1 : (req_cnt_q == 10 && resp_valid);
 
   assign lsu_ready_wb_o = is_burst ? lsu_ready_wb_burst : lsu_ready_wb_normal;
 
@@ -474,7 +469,7 @@ module cv32e40p_load_store_unit #(
                           (cnt_q == 2'b00) ? (              trans_valid && trans_ready) : 
                           (cnt_q == 2'b01) ? (resp_valid && trans_valid && trans_ready) : 
                                               resp_valid;
-  assign lsu_ready_ex_burst = (data_req_ex_i == 1'b0 ? 1'b1 : (resp_cnt_q == 9 && resp_valid));
+  assign lsu_ready_ex_burst = (data_req_ex_i == 1'b0) ? 1'b1 : (req_cnt_q == 10);
 
   // Update signals for EX/WB registers (when EX has valid data itself and is ready for next)
   assign lsu_ready_ex_o = is_burst ? lsu_ready_ex_burst : lsu_ready_ex_normal;

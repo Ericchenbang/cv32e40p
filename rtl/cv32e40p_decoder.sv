@@ -120,6 +120,11 @@ module cv32e40p_decoder
   output logic [1:0]             apu_lat_o,
   output logic [2:0]             fp_rnd_mode_o,
 
+  output logic slh_en_o,
+  output logic slh_rega_used_o,
+  output logic slh_regb_used_o,
+  output logic slh_regc_used_o,
+
   // register file related signals
   output logic        regfile_mem_we_o,        // write enable for regfile
   output logic        regfile_alu_we_o,        // write enable for 2nd regfile port
@@ -180,6 +185,7 @@ module cv32e40p_decoder
   logic       mult_int_en;
   logic       mult_dot_en;
   logic       apu_en;
+  logic       slh_en;
 
   // this instruction needs floating-point rounding-mode verification
   logic check_fprm;
@@ -239,6 +245,8 @@ module cv32e40p_decoder
     check_fprm                     = 1'b0;
     fp_op_group                    = ADDMUL;
 
+    slh_en                         = 1'b0;
+
     regfile_mem_we                 = 1'b0;
     regfile_alu_we                 = 1'b0;
     slh_regfile_mem_we             = 1'b0;
@@ -285,6 +293,10 @@ module cv32e40p_decoder
     reg_fp_b_o                     = 1'b0;
     reg_fp_c_o                     = 1'b0;
     reg_fp_d_o                     = 1'b0;
+
+    slh_rega_used_o                = 1'b0;
+    slh_regb_used_o                = 1'b0;
+    slh_regc_used_o                = 1'b0;
 
     bmask_a_mux_o                  = BMASK_A_ZERO;
     bmask_b_mux_o                  = BMASK_B_ZERO;
@@ -369,27 +381,51 @@ module cv32e40p_decoder
       //////////////////////////////////
 
       OPCODE_STORE: begin
-        data_req           = 1'b1;
-        data_we_o          = 1'b1;
-        rega_used_o        = 1'b1;
-        regb_used_o        = 1'b1;
-        alu_operator_o     = ALU_ADD;
-        // pass write data through ALU operand c
-        alu_op_c_mux_sel_o = OP_C_REGB_OR_FWD;
-        // offset from immediate
-        imm_b_mux_sel_o    = IMMB_S;
-        alu_op_b_mux_sel_o = OP_B_IMM;
-
-        // store size
         unique case (instr_rdata_i[14:12])
-          3'b000 : data_type_o = 2'b10; // SB
-          3'b001 : data_type_o = 2'b01; // SH
-          3'b010 : data_type_o = 2'b00; // SW
-          default: begin
+        3'b000, 3'b001, 3'b010: begin
+          data_req           = 1'b1;
+          data_we_o          = 1'b1;
+          rega_used_o        = 1'b1;
+          regb_used_o        = 1'b1;
+          alu_operator_o     = ALU_ADD;
+          // pass write data through ALU operand c
+          alu_op_c_mux_sel_o = OP_C_REGB_OR_FWD;
+          // offset from immediate
+          imm_b_mux_sel_o    = IMMB_S;
+          alu_op_b_mux_sel_o = OP_B_IMM;
+
+          // store size
+          unique case (instr_rdata_i[14:12])
+            3'b000 : data_type_o = 2'b10; // SB
+            3'b001 : data_type_o = 2'b01; // SH
+            3'b010 : data_type_o = 2'b00; // SW
+            default: begin
+              illegal_insn_o = 1'b1;
+              data_req       = 1'b0;
+              data_we_o      = 1'b0;
+            end
+          endcase
+        end
+        3'b111: begin
+          if (instr_rdata_i[11:7]>5'd15)
             illegal_insn_o = 1'b1;
-            data_req       = 1'b0;
-            data_we_o      = 1'b0;
+          else begin
+            vdata_req          = 1'b1;
+            data_we_o          = 1'b1;
+            rega_used_o        = 1'b1;
+            slh_en             = 1'b1;
+            slh_rega_used_o    = 1'b1;
+            alu_operator_o     = ALU_ADD;
+            // offset from immediate
+            imm_b_mux_sel_o    = IMMB_S;
+            alu_op_b_mux_sel_o = OP_B_IMM;
+
+            data_type_o = 2'b11;
           end
+        end
+        default: begin
+            illegal_insn_o = 1'b1;
+        end
         endcase
       end
 
@@ -3046,6 +3082,7 @@ module cv32e40p_decoder
   assign mult_int_en_o               = (deassert_we_i) ? 1'b0          : mult_int_en;
   assign mult_dot_en_o               = (deassert_we_i) ? 1'b0          : mult_dot_en;
   assign apu_en_o                    = (deassert_we_i) ? 1'b0          : apu_en;
+  assign slh_en_o                    = (deassert_we_i) ? 1'b0          : slh_en;
   assign regfile_mem_we_o            = (deassert_we_i) ? 1'b0          : regfile_mem_we;
   assign slh_regfile_mem_we_o        = (deassert_we_i) ? 1'b0          : slh_regfile_mem_we;
   assign regfile_alu_we_o            = (deassert_we_i) ? 1'b0          : regfile_alu_we;
