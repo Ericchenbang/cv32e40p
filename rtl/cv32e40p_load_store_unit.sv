@@ -105,6 +105,7 @@ module cv32e40p_load_store_unit #(
   // MODIFICATION: 320-bit Burst FSM Signals
   logic is_burst;
   logic [3:0] req_cnt_q;
+  logic [3:0] req_cnt_next;
   logic [319:0] rdata_320_q;
   logic lsu_ready_wb_normal;
   logic lsu_ready_wb_burst;
@@ -392,19 +393,6 @@ module cv32e40p_load_store_unit #(
 
   always_ff @(posedge clk or negedge rst_n) begin
       if (!rst_n) begin
-          req_cnt_q <= '0;
-      end else begin
-        if (is_burst) begin
-          if (resp_valid) 
-            req_cnt_q <= (req_cnt_q == 10) ? '0 : req_cnt_q + 1;
-        end else if (lsu_ready_ex_o && data_req_ex_i) begin
-          req_cnt_q <= '0;
-        end 
-      end
-  end
-
-  always_ff @(posedge clk or negedge rst_n) begin
-      if (!rst_n) begin
         rdata_320_q <= '0;
       end else begin
         if (is_burst && (~data_we_ex_i)) begin
@@ -507,6 +495,21 @@ module cv32e40p_load_store_unit #(
     endcase
   end
 
+  always_comb begin
+    if (!rst_n) begin
+      req_cnt_next = 1'b0;
+    end else begin
+      req_cnt_next = 1'b0;
+      if (is_burst) begin
+        if (resp_valid) begin
+          if (req_cnt_q < 4'd10)
+            req_cnt_next = req_cnt_q + 1;
+        end else begin
+          req_cnt_next = req_cnt_q;
+        end
+      end
+    end
+  end
 
   //////////////////////////////////////////////////////////////////////////////
   // Registers
@@ -520,6 +523,13 @@ module cv32e40p_load_store_unit #(
     end
   end
 
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      req_cnt_q <= '0;
+    end else begin
+      req_cnt_q <= req_cnt_next;
+    end
+  end
 
   //////////////////////////////////////////////////////////////////////////////
   // OBI interface

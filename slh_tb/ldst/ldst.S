@@ -39,6 +39,10 @@ _start:
 
     lv      x0, 0(s1)
     sv      x0, 40(s1)
+    lv      x5, 8(s1)
+    sv      x5, 80(s1)
+    lv      x12, 16(s1)
+    sv      x12, 120(s1)
     
     lui     t1, 0x20000
     sw      x0, 4(t1)
