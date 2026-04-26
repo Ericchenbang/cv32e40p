@@ -407,7 +407,7 @@ module cv32e40p_decoder
           endcase
         end
         3'b111: begin
-          if (instr_rdata_i[11:7]>5'd15)
+          if (instr_rdata_i[24])
             illegal_insn_o = 1'b1;
           else begin
             vdata_req          = 1'b1;

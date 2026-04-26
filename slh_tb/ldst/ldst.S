@@ -6,8 +6,8 @@
 
 _start:
     addi    t0, zero, 0x10
-    addi    s0, zero, 0x200
-    addi    s1, zero, 0x200
+    lui     s0, 0x200
+    lui     s1, 0x200
     sw      t0, 0(s0) 
     addi    s0, s0, 0x4
     addi    t0, t0, 0x4
