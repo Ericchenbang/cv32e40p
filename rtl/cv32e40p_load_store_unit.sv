@@ -69,19 +69,23 @@ module cv32e40p_load_store_unit #(
     output logic lsu_ready_ex_o,  // LSU ready for new data in EX stage
     output logic lsu_ready_wb_o,  // LSU ready for new data in WB stage
 
-    output logic busy_o
+    output logic busy_o,
+
+    // SIMD 64-bit load/store interface (for SIMD RF <-> memory)
+    input  logic        simd_data_req_ex_i,
+    input  logic        simd_data_we_ex_i,
+    input  logic [31:0] simd_addr_ex_i,
+    input  logic [63:0] simd_wdata_ex_i,
+    output logic [63:0] simd_rdata_o,
+    output logic        simd_rvalid_o,
+    output logic        simd_lsu_busy_o
 );
 
   localparam DEPTH = 2;  // Maximum number of outstanding transactions
 
   // Transaction request (to cv32e40p_obi_interface)
-  logic trans_valid;
+  // trans_valid/addr/we/be/wdata/atop are now managed via the normal_trans_* / simd_trans_* arbitration mux (see below).
   logic trans_ready;
-  logic [31:0] trans_addr;
-  logic trans_we;
-  logic [3:0] trans_be;
-  logic [31:0] trans_wdata;
-  logic [5:0] trans_atop;
 
   // Transaction response interface (from cv32e40p_obi_interface)
   logic resp_valid;
@@ -346,7 +350,7 @@ module cv32e40p_load_store_unit #(
   assign data_addr_int = (addr_useincr_ex_i) ? (operand_a_ex_i + operand_b_ex_i) : operand_a_ex_i;
 
   // Busy if there are ongoing (or potentially outstanding) transfers
-  assign busy_o = (cnt_q != 2'b00) || trans_valid;
+  assign busy_o = (cnt_q != 2'b00) || normal_trans_valid || simd_lsu_busy_o;;
 
   //////////////////////////////////////////////////////////////////////////////
   // Transaction request generation
@@ -358,26 +362,7 @@ module cv32e40p_load_store_unit #(
   //////////////////////////////////////////////////////////////////////////////
 
   // For last phase of misaligned transfer the address needs to be word aligned (as LSB of data_be will be set)
-  assign trans_addr = data_misaligned_ex_i ? {data_addr_int[31:2], 2'b00} : data_addr_int;
-  assign trans_we = data_we_ex_i;
-  assign trans_be = data_be;
-  assign trans_wdata = data_wdata;
-  assign trans_atop = data_atop_ex_i;
-
-  // Transaction request generation
-  generate
-    if (PULP_OBI == 0) begin : gen_no_pulp_obi
-      // OBI compatible (avoids combinatorial path from data_rvalid_i to data_req_o).
-      // Multiple trans_* transactions can be issued (and accepted) before a response
-      // (resp_*) is received.
-      assign trans_valid = data_req_ex_i && (cnt_q < DEPTH);
-    end else begin : gen_pulp_obi
-      // Legacy PULP OBI behavior, i.e. only issue subsequent transaction if preceding transfer
-      // is about to finish (re-introducing timing critical path from data_rvalid_i to data_req_o)
-      assign trans_valid = (cnt_q == 2'b00) ? data_req_ex_i && (cnt_q < DEPTH) :
-                                              data_req_ex_i && (cnt_q < DEPTH) && resp_valid;
-    end
-  endgenerate
+  // Transaction request generation (normal 32-bit path; see SIMD arbitration section below)
 
   // LSU WB stage is ready if it is not being used (i.e. no outstanding transfers, cnt_q = 0),
   // or if it WB stage is being used and the awaited response arrives (resp_rvalid).
@@ -394,9 +379,13 @@ module cv32e40p_load_store_unit #(
   // in case there is already at least one outstanding transaction (so WB is full) the EX 
   // and WB stage can only signal readiness in lock step (so resp_valid is used as well).
 
+  // Active transaction valid: whichever path currently owns the bus
+  logic active_trans_valid;
+  assign active_trans_valid = simd_lsu_busy_o ? simd_trans_valid : normal_trans_valid;
+
   assign lsu_ready_ex_o = (data_req_ex_i == 1'b0) ? 1'b1 :
-                          (cnt_q == 2'b00) ? (              trans_valid && trans_ready) : 
-                          (cnt_q == 2'b01) ? (resp_valid && trans_valid && trans_ready) : 
+                          (cnt_q == 2'b00) ? (              active_trans_valid && trans_ready) : 
+                          (cnt_q == 2'b01) ? (resp_valid && active_trans_valid && trans_ready) : 
                                               resp_valid;
 
   // Update signals for EX/WB registers (when EX has valid data itself and is ready for next)
@@ -412,7 +401,7 @@ module cv32e40p_load_store_unit #(
   // will only occur in response to accepted transfer request (as per the OBI protocol).
   //////////////////////////////////////////////////////////////////////////////
 
-  assign count_up = trans_valid && trans_ready;  // Increment upon accepted transfer request
+  assign count_up = active_trans_valid && trans_ready;  // Increment upon accepted transfer request
   assign count_down = resp_valid;  // Decrement upon accepted transfer response
 
   always_comb begin
@@ -449,6 +438,125 @@ module cv32e40p_load_store_unit #(
 
 
   //////////////////////////////////////////////////////////////////////////////
+  // SIMD 64-bit Load/Store FSM
+  //////////////////////////////////////////////////////////////////////////////
+
+  typedef enum logic [2:0] {
+    SIMD_IDLE      = 3'd0,
+    SIMD_LOW_REQ   = 3'd1,
+    SIMD_LOW_WAIT  = 3'd2,
+    SIMD_HIGH_REQ  = 3'd3,
+    SIMD_HIGH_WAIT = 3'd4,
+    SIMD_DONE      = 3'd5
+  } simd_state_e;
+
+  simd_state_e simd_state_q, simd_state_d;
+
+  logic [31:0] simd_addr_q;
+  logic        simd_we_q;
+  logic [63:0] simd_wdata_q;
+  logic [31:0] simd_rdata_low_q;
+
+  logic        simd_trans_valid;
+  logic [31:0] simd_trans_addr;
+  logic        simd_trans_we;
+  logic [31:0] simd_trans_wdata;
+
+  always_comb begin
+    simd_state_d     = simd_state_q;
+    simd_trans_valid = 1'b0;
+    simd_trans_addr  = simd_addr_q;
+    simd_trans_we    = simd_we_q;
+    simd_trans_wdata = simd_wdata_q[31:0];
+
+    unique case (simd_state_q)
+      SIMD_IDLE:      if (simd_data_req_ex_i) simd_state_d = SIMD_LOW_REQ;
+      
+      SIMD_LOW_REQ: begin
+        simd_trans_valid = 1'b1;
+        simd_trans_addr  = simd_addr_q;
+        simd_trans_we    = simd_we_q;
+        simd_trans_wdata = simd_wdata_q[31:0];
+        // FIX: Always go to WAIT state, even for writes, to ensure bus synchronization
+        if (trans_ready) simd_state_d = SIMD_LOW_WAIT;
+      end
+      
+      SIMD_LOW_WAIT:  if (resp_valid) simd_state_d = SIMD_HIGH_REQ;
+      
+      SIMD_HIGH_REQ: begin
+        simd_trans_valid = 1'b1;
+        simd_trans_addr  = simd_addr_q + 32'd4;
+        simd_trans_we    = simd_we_q;
+        simd_trans_wdata = simd_wdata_q[63:32];
+        // FIX: Always wait for the final response
+        if (trans_ready) simd_state_d = SIMD_HIGH_WAIT; 
+      end
+      
+      SIMD_HIGH_WAIT: if (resp_valid) simd_state_d = SIMD_DONE;
+      
+      SIMD_DONE:      simd_state_d = SIMD_IDLE;
+      default:        simd_state_d = SIMD_IDLE;
+    endcase
+  end
+
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      simd_state_q     <= SIMD_IDLE;
+      simd_addr_q      <= '0;
+      simd_we_q        <= 1'b0;
+      simd_wdata_q     <= '0;
+      simd_rdata_low_q <= '0;
+    end else begin
+      simd_state_q <= simd_state_d;
+      
+      if (simd_state_q == SIMD_IDLE && simd_data_req_ex_i) begin
+        simd_addr_q  <= simd_addr_ex_i;
+        simd_we_q    <= simd_data_we_ex_i;
+        simd_wdata_q <= simd_wdata_ex_i;
+      end
+      
+      if (simd_state_q == SIMD_LOW_WAIT && resp_valid)
+        simd_rdata_low_q <= resp_rdata;
+    end
+  end
+
+  // FIX: Output data directly while resp_valid is high during the final wait state
+  assign simd_rdata_o  = {resp_rdata, simd_rdata_low_q};
+  
+  // FIX: Assert rvalid as a pulse exactly when the high data arrives
+  assign simd_rvalid_o = (simd_state_q == SIMD_HIGH_WAIT) && resp_valid && !simd_we_q;
+  
+  // Keep the LSU busy until we officially transition out of DONE
+  assign simd_lsu_busy_o = (simd_state_q != SIMD_IDLE);
+
+  //////////////////////////////////////////////////////////////////////////////
+  // OBI arbitration: SIMD takes priority over normal 32-bit path
+  //////////////////////////////////////////////////////////////////////////////
+
+  logic        normal_trans_valid;
+  logic [31:0] normal_trans_addr;
+  logic        normal_trans_we;
+  logic [ 3:0] normal_trans_be;
+  logic [31:0] normal_trans_wdata;
+  logic [ 5:0] normal_trans_atop;
+
+  generate
+    if (PULP_OBI == 0) begin : gen_normal_valid_obi
+      assign normal_trans_valid = data_req_ex_i && (cnt_q < DEPTH) && !simd_lsu_busy_o;
+    end else begin : gen_normal_valid_pulp
+      assign normal_trans_valid = !simd_lsu_busy_o && (
+          (cnt_q == 2'b00) ? data_req_ex_i && (cnt_q < DEPTH) :
+                             data_req_ex_i && (cnt_q < DEPTH) && resp_valid);
+    end
+  endgenerate
+
+  assign normal_trans_addr  = data_misaligned_ex_i ? {data_addr_int[31:2], 2'b00} : data_addr_int;
+  assign normal_trans_we    = data_we_ex_i;
+  assign normal_trans_be    = data_be;
+  assign normal_trans_wdata = data_wdata;
+  assign normal_trans_atop  = data_atop_ex_i;
+
+  //////////////////////////////////////////////////////////////////////////////
   // OBI interface
   //////////////////////////////////////////////////////////////////////////////
 
@@ -458,17 +566,17 @@ module cv32e40p_load_store_unit #(
       .clk  (clk),
       .rst_n(rst_n),
 
-      .trans_valid_i(trans_valid),
+      .trans_valid_i(simd_lsu_busy_o ? simd_trans_valid  : normal_trans_valid),
       .trans_ready_o(trans_ready),
-      .trans_addr_i (trans_addr),
-      .trans_we_i   (trans_we),
-      .trans_be_i   (trans_be),
-      .trans_wdata_i(trans_wdata),
-      .trans_atop_i (trans_atop),
+      .trans_addr_i (simd_lsu_busy_o ? simd_trans_addr   : normal_trans_addr),
+      .trans_we_i   (simd_lsu_busy_o ? simd_trans_we     : normal_trans_we),
+      .trans_be_i   (simd_lsu_busy_o ? 4'b1111           : normal_trans_be),
+      .trans_wdata_i(simd_lsu_busy_o ? simd_trans_wdata  : normal_trans_wdata),
+      .trans_atop_i (simd_lsu_busy_o ? 6'b0              : normal_trans_atop),
 
       .resp_valid_o(resp_valid),
       .resp_rdata_o(resp_rdata),
-      .resp_err_o  (resp_err),  // Unused for now
+      .resp_err_o  (resp_err),
 
       .obi_req_o   (data_req_o),
       .obi_gnt_i   (data_gnt_i),
@@ -476,12 +584,11 @@ module cv32e40p_load_store_unit #(
       .obi_we_o    (data_we_o),
       .obi_be_o    (data_be_o),
       .obi_wdata_o (data_wdata_o),
-      .obi_atop_o  (data_atop_o),  // Not (yet) defined in OBI 1.0 spec
+      .obi_atop_o  (data_atop_o),
       .obi_rdata_i (data_rdata_i),
       .obi_rvalid_i(data_rvalid_i),
-      .obi_err_i   (data_err_i)  // External bus error (validity defined by obi_rvalid_i)
+      .obi_err_i   (data_err_i)
   );
-
 
   //////////////////////////////////////////////////////////////////////////////
   // Assertions

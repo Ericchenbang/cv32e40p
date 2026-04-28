@@ -259,6 +259,21 @@ module cv32e40p_core
   assign simd_rf_wdata_b = '0;
   assign simd_rf_we_b    = 1'b0;
 
+  // SIMD LSU wires (64-bit load/store path)
+  logic        simd_lsu_req;
+  logic        simd_lsu_we;
+  logic [31:0] simd_lsu_addr;
+  logic [63:0] simd_lsu_wdata;
+  logic [63:0] simd_lsu_rdata;
+  logic        simd_lsu_rvalid;
+  logic        simd_lsu_busy;
+
+  // Stub tie-offs -- Phase 3 custom instruction decoder will drive these
+  assign simd_lsu_req   = 1'b0;
+  assign simd_lsu_we    = 1'b0;
+  assign simd_lsu_addr  = '0;
+  assign simd_lsu_wdata = '0;
+
 
   // CSR control
   logic                                     csr_access_ex;
@@ -961,7 +976,15 @@ module cv32e40p_core
       .lsu_ready_ex_o(lsu_ready_ex),
       .lsu_ready_wb_o(lsu_ready_wb),
 
-      .busy_o(lsu_busy)
+      .busy_o(lsu_busy),
+
+      .simd_data_req_ex_i(simd_lsu_req),
+      .simd_data_we_ex_i (simd_lsu_we),
+      .simd_addr_ex_i    (simd_lsu_addr),
+      .simd_wdata_ex_i   (simd_lsu_wdata),
+      .simd_rdata_o      (simd_lsu_rdata),
+      .simd_rvalid_o     (simd_lsu_rvalid),
+      .simd_lsu_busy_o   (simd_lsu_busy)
   );
 
   // Tracer signal
