@@ -1,0 +1,152 @@
+Magic 271485
+Revision Verdi_X-2025.06
+
+; Window Layout <x> <y> <width> <height> <signalwidth> <valuewidth>
+viewPort 0 23 1536 793 174 65
+
+; File list:
+; openDirFile [-d delimiter] [-s time_offset] [-rf auto_bus_rule_file] path_name file_name
+openDirFile -d / "" "/home/ic_contest/diclab008/project/cv32e40p/example_tb/core/main.fsdb"
+
+; file time scale:
+; fileTimeScale ### s|ms|us|ns|ps
+
+; signal spacing:
+signalSpacing 5
+
+; windowTimeUnit is used for zoom, cursor & marker
+; waveform viewport range
+zoom 142839162.707905 143212983.542463
+cursor 142970000.000000
+marker 0.000000
+
+; user define markers
+; userMarker time_pos marker_name color linestyle
+; visible top row signal index
+top 15
+; marker line index
+markerPos 45
+
+; event list
+; addEvent event_name event_expression
+; curEvent event_name
+
+
+
+COMPLEX_EVENT_BEGIN
+
+
+COMPLEX_EVENT_END
+
+
+
+; toolbar current search type
+; curSTATUS search_type
+curSTATUS ByValue
+
+
+addGroup "IF"
+activeDirFile "" "/home/ic_contest/diclab008/project/cv32e40p/example_tb/core/main.fsdb"
+addSignal -h 16 /tb_top/wrapper_i/top_i/core_i/if_stage_i/clk
+addSignal -h 16 -holdScope rst_n
+addSignal -h 16 -UNSIGNED -HEX -holdScope pc_id_o[31:0]
+addSignal -h 16 -UNSIGNED -HEX -holdScope instr_rdata_i[31:0]
+addGroup "ID"
+addSignal -h 16 -UNSIGNED -HEX /tb_top/wrapper_i/top_i/core_i/id_stage_i/instr_rdata_i[31:0]
+addSignal -h 16 -holdScope is_decoding_o
+addSignal -expanded -h 16 /tb_top/wrapper_i/top_i/core_i/id_stage_i/register_file_i/mem[31:0]
+addSignal -h 16 -UNSIGNED -HEX -holdScope mem[31][31:0]
+addSignal -h 16 -UNSIGNED -HEX -holdScope mem[30][31:0]
+addSignal -h 16 -UNSIGNED -HEX -holdScope mem[29][31:0]
+addSignal -h 16 -UNSIGNED -HEX -holdScope mem[28][31:0]
+addSignal -h 16 -UNSIGNED -HEX -holdScope mem[27][31:0]
+addSignal -h 16 -UNSIGNED -HEX -holdScope mem[26][31:0]
+addSignal -h 16 -UNSIGNED -HEX -holdScope mem[25][31:0]
+addSignal -h 16 -UNSIGNED -HEX -holdScope mem[24][31:0]
+addSignal -h 16 -UNSIGNED -HEX -holdScope mem[23][31:0]
+addSignal -h 16 -UNSIGNED -HEX -holdScope mem[22][31:0]
+addSignal -h 16 -UNSIGNED -HEX -holdScope mem[21][31:0]
+addSignal -h 16 -UNSIGNED -HEX -holdScope mem[20][31:0]
+addSignal -h 16 -UNSIGNED -HEX -holdScope mem[19][31:0]
+addSignal -h 16 -UNSIGNED -HEX -holdScope mem[18][31:0]
+addSignal -h 16 -UNSIGNED -HEX -holdScope mem[17][31:0]
+addSignal -h 16 -UNSIGNED -HEX -holdScope mem[16][31:0]
+addSignal -h 16 -UNSIGNED -HEX -holdScope mem[15][31:0]
+addSignal -h 16 -UNSIGNED -HEX -holdScope mem[14][31:0]
+addSignal -h 16 -UNSIGNED -HEX -holdScope mem[13][31:0]
+addSignal -h 16 -UNSIGNED -HEX -holdScope mem[12][31:0]
+addSignal -h 16 -UNSIGNED -HEX -holdScope mem[11][31:0]
+addSignal -h 16 -UNSIGNED -HEX -holdScope mem[10][31:0]
+addSignal -h 16 -UNSIGNED -HEX -holdScope mem[9][31:0]
+addSignal -h 16 -UNSIGNED -HEX -holdScope mem[8][31:0]
+addSignal -h 16 -UNSIGNED -HEX -holdScope mem[7][31:0]
+addSignal -h 16 -UNSIGNED -HEX -holdScope mem[6][31:0]
+addSignal -h 16 -UNSIGNED -HEX -holdScope mem[5][31:0]
+addSignal -h 16 -UNSIGNED -HEX -holdScope mem[4][31:0]
+addSignal -h 16 -UNSIGNED -HEX -holdScope mem[3][31:0]
+addSignal -h 16 -UNSIGNED -HEX -holdScope mem[2][31:0]
+addSignal -h 16 -UNSIGNED -HEX -holdScope mem[1][31:0]
+addSignal -h 16 -UNSIGNED -HEX -holdScope mem[0][31:0]
+addGroup "G3"
+addSignal -h 16 -UNSIGNED -HEX /tb_top/wrapper_i/top_i/core_i/ex_stage_i/alu_operand_a_i[31:0]
+addSignal -h 16 -UNSIGNED -HEX -holdScope alu_operand_b_i[31:0]
+addSignal -h 16 -UNSIGNED -HEX -holdScope alu_result[31:0]
+addGroup "G4"
+
+; getSignalForm Scope Hierarchy Status
+; active file of getSignalForm
+activeDirFile "" "/home/ic_contest/diclab008/project/cv32e40p/example_tb/core/main.fsdb"
+
+GETSIGNALFORM_SCOPE_HIERARCHY_BEGIN
+getSignalForm close
+
+"/_vcs_msglog"
+"/tb_top"
+"/tb_top/clock_gen"
+"/tb_top/wrapper_i"
+"/tb_top/wrapper_i/ram_i"
+"/tb_top/wrapper_i/ram_i/dp_ram_i"
+"/tb_top/wrapper_i/top_i"
+"/tb_top/wrapper_i/top_i/core_i"
+"/tb_top/wrapper_i/top_i/core_i/cs_registers_i"
+"/tb_top/wrapper_i/top_i/core_i/ex_stage_i"
+"/tb_top/wrapper_i/top_i/core_i/id_stage_i"
+
+SCOPE_LIST_BEGIN
+"/tb_top/"
+"/_vcs_msglog"
+"/tb_top/wrapper_i/top_i/core_i/id_stage_i/register_file_i"
+"/tb_top/wrapper_i/top_i/core_i/id_stage_i"
+"/tb_top"
+"/tb_top/wrapper_i"
+"/tb_top/wrapper_i/top_i"
+"/tb_top/wrapper_i/top_i/core_i"
+"/tb_top/wrapper_i/top_i/core_i/if_stage_i"
+"/tb_top/wrapper_i/top_i/core_i/ex_stage_i"
+"/tb_top/wrapper_i/top_i/core_i/cs_registers_i"
+"/tb_top/wrapper_i/ram_i"
+"/tb_top/wrapper_i/ram_i/dp_ram_i"
+"/tb_top/wrapper_i/ram_i/dp_ram_i/unnamed$$_0"
+"/tb_top/wrapper_i/ram_i/data_gnt_stall_i"
+"/tb_top/wrapper_i/ram_i/data_rvalid_stall_i"
+"/tb_top/wrapper_i/ram_i/unnamed$$_0"
+"/tb_top/wrapper_i/ram_i/read_mux"
+"/tb_top/wrapper_i/ram_i/random_interrupt_generator_i"
+"/tb_top/wrapper_i/ram_i/print_peripheral"
+"/tb_top/wrapper_i/ram_i/instr_rvalid_stall_i"
+"/tb_top/wrapper_i/ram_i/instr_gnt_stall_i"
+"/tb_top/wrapper_i/top_i/core_i/id_stage_i/register_file_i/gen_rf[10]"
+"/cv32e40p_tb_wrapper/tracer_i/unnamed$$_1"
+"/cv32e40p_tb_wrapper/tracer_i/unnamed$$_2"
+"/cv32e40p_tb_wrapper/tracer_i"
+"/cv32e40p_tb_wrapper"
+"/tb_top/clock_gen"
+"/tb_top/reset_gen"
+"/tb_top/load_prog"
+"/tb_top/timing_format"
+"/tb_top/unnamed$$_0"
+SCOPE_LIST_END
+
+GETSIGNALFORM_SCOPE_HIERARCHY_END
+
+

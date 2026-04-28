@@ -1,0 +1,348 @@
+debImport "-f" "../../cv32e40p_manifest.flist" "include/perturbation_pkg.sv" \
+          "cv32e40p_random_interrupt_generator.sv" "dp_ram.sv" "tb_top.sv" \
+          "cv32e40p_tb_subsystem.sv" "riscv_rvalid_stall.sv" \
+          "riscv_gnt_stall.sv" "amo_shim.sv" "mm_ram.sv"
+wvCreateWindow
+wvOpenFile -win $_nWave2 \
+           {/home/ic_contest/diclab008/project/cv32e40p/example_tb/core/novas.fsdb}
+verdiSetActWin -win $_nWave2
+verdiWindowResize -win $_Verdi_1 "318" "82" "900" "700"
+verdiSetActWin -dock widgetDock_MTB_SOURCE_TAB_1
+verdiSetActWin -win $_nWave2
+wvConvertFile -win $_nWave2 -o \
+           "/home/ic_contest/diclab008/project/cv32e40p/example_tb/core/riscy_tb.vcd.fsdb" \
+           "/home/ic_contest/diclab008/project/cv32e40p/example_tb/core/riscy_tb.vcd"
+wvSetPosition -win $_nWave2 {("G1" 0)}
+wvOpenFile -win $_nWave2 \
+           {/home/ic_contest/diclab008/project/cv32e40p/example_tb/core/riscy_tb.vcd.fsdb}
+verdiDockWidgetHide -dock widgetDock_<Inst._Tree>
+srcDeselectAll -win $_nTrace1
+verdiSetActWin -dock widgetDock_MTB_SOURCE_TAB_1
+verdiDockWidgetHide -dock widgetDock_MTB_SOURCE_TAB_1
+verdiSetActWin -win $_nWave2
+verdiDockWidgetHide -dock widgetDock_<Decl._Tree>
+wvGetSignalOpen -win $_nWave2
+wvGetSignalSetScope -win $_nWave2 "/tb_top"
+wvGetSignalSetScope -win $_nWave2 \
+           "/tb_top/wrapper_i/top_i/core_i/id_stage_i/register_file_i"
+wvSetPosition -win $_nWave2 {("G1" 1)}
+wvSetPosition -win $_nWave2 {("G1" 1)}
+wvAddSignal -win $_nWave2 -clear
+wvAddSignal -win $_nWave2 -group {"G1" \
+{/tb_top/wrapper_i/top_i/core_i/id_stage_i/register_file_i/mem\[1023:0\]} -height 16 \
+}
+wvAddSignal -win $_nWave2 -group {"G2" \
+}
+wvSelectSignal -win $_nWave2 {( "G1" 1 )} 
+wvSetPosition -win $_nWave2 {("G1" 1)}
+wvSetPosition -win $_nWave2 {("G1" 1)}
+wvSetPosition -win $_nWave2 {("G1" 1)}
+wvAddSignal -win $_nWave2 -clear
+wvAddSignal -win $_nWave2 -group {"G1" \
+{/tb_top/wrapper_i/top_i/core_i/id_stage_i/register_file_i/mem\[1023:0\]} -height 16 \
+}
+wvAddSignal -win $_nWave2 -group {"G2" \
+}
+wvSelectSignal -win $_nWave2 {( "G1" 1 )} 
+wvSetPosition -win $_nWave2 {("G1" 1)}
+wvGetSignalClose -win $_nWave2
+wvOpenFile -win $_nWave2 \
+           {/home/ic_contest/diclab008/project/cv32e40p/example_tb/core/test.fsdb}
+wvSelectSignal -win $_nWave2 {( "G1" 1 )} 
+wvCut -win $_nWave2
+wvSetPosition -win $_nWave2 {("G2" 0)}
+wvSetPosition -win $_nWave2 {("G1" 0)}
+wvGetSignalOpen -win $_nWave2
+wvGetSignalSetScope -win $_nWave2 "/_vcs_msglog"
+wvGetSignalSetScope -win $_nWave2 "/tb_top/wrapper_i/top_i/core_i/id_stage_i"
+wvGetSignalSetScope -win $_nWave2 \
+           "/tb_top/wrapper_i/top_i/core_i/id_stage_i/register_file_i"
+wvSetPosition -win $_nWave2 {("G1" 1)}
+wvSetPosition -win $_nWave2 {("G1" 1)}
+wvAddSignal -win $_nWave2 -clear
+wvAddSignal -win $_nWave2 -group {"G1" \
+{/tb_top/wrapper_i/top_i/core_i/id_stage_i/register_file_i/mem\[31:0\]} -height 16 \
+}
+wvAddSignal -win $_nWave2 -group {"G2" \
+}
+wvSelectSignal -win $_nWave2 {( "G1" 1 )} 
+wvSetPosition -win $_nWave2 {("G1" 1)}
+wvSetPosition -win $_nWave2 {("G1" 1)}
+wvSetPosition -win $_nWave2 {("G1" 1)}
+wvAddSignal -win $_nWave2 -clear
+wvAddSignal -win $_nWave2 -group {"G1" \
+{/tb_top/wrapper_i/top_i/core_i/id_stage_i/register_file_i/mem\[31:0\]} -height 16 \
+}
+wvAddSignal -win $_nWave2 -group {"G2" \
+}
+wvSelectSignal -win $_nWave2 {( "G1" 1 )} 
+wvSetPosition -win $_nWave2 {("G1" 1)}
+wvGetSignalClose -win $_nWave2
+wvGetSignalOpen -win $_nWave2
+wvGetSignalSetScope -win $_nWave2 "/_vcs_msglog"
+wvGetSignalSetScope -win $_nWave2 "/tb_top"
+wvGetSignalSetScope -win $_nWave2 "/tb_top/wrapper_i"
+wvGetSignalSetScope -win $_nWave2 "/tb_top/wrapper_i/ram_i"
+wvGetSignalSetScope -win $_nWave2 "/tb_top/wrapper_i/top_i"
+wvGetSignalSetScope -win $_nWave2 "/tb_top/wrapper_i/top_i/core_i"
+wvGetSignalSetScope -win $_nWave2 "/tb_top/wrapper_i/top_i/core_i/id_stage_i"
+wvGetSignalSetScope -win $_nWave2 \
+           "/tb_top/wrapper_i/top_i/core_i/id_stage_i/register_file_i"
+wvGetSignalSetScope -win $_nWave2 "/tb_top/wrapper_i/top_i/core_i/id_stage_i"
+wvGetSignalSetScope -win $_nWave2 "/tb_top/wrapper_i/top_i/core_i/if_stage_i"
+wvSetPosition -win $_nWave2 {("G1" 3)}
+wvSetPosition -win $_nWave2 {("G1" 3)}
+wvAddSignal -win $_nWave2 -clear
+wvAddSignal -win $_nWave2 -group {"G1" \
+{/tb_top/wrapper_i/top_i/core_i/id_stage_i/register_file_i/mem\[31:0\]} -height 16 \
+{/tb_top/wrapper_i/top_i/core_i/if_stage_i/clk} -height 16 \
+{/tb_top/wrapper_i/top_i/core_i/if_stage_i/rst_n} -height 16 \
+}
+wvAddSignal -win $_nWave2 -group {"G2" \
+}
+wvSelectSignal -win $_nWave2 {( "G1" 2 3 )} 
+wvSetPosition -win $_nWave2 {("G1" 3)}
+wvSetPosition -win $_nWave2 {("G1" 3)}
+wvSetPosition -win $_nWave2 {("G1" 3)}
+wvAddSignal -win $_nWave2 -clear
+wvAddSignal -win $_nWave2 -group {"G1" \
+{/tb_top/wrapper_i/top_i/core_i/if_stage_i/clk} -height 16 \
+{/tb_top/wrapper_i/top_i/core_i/if_stage_i/rst_n} -height 16 \
+{/tb_top/wrapper_i/top_i/core_i/if_stage_i/pc_if_o\[31:0\]} -height 16 \
+}
+wvAddSignal -win $_nWave2 -group {"G2" \
+{/tb_top/wrapper_i/top_i/core_i/id_stage_i/register_file_i/mem\[31:0\]} -height 16 \
+}
+wvAddSignal -win $_nWave2 -group {"G3" \
+}
+wvSelectSignal -win $_nWave2 {( "G1" 3 )} 
+wvSetPosition -win $_nWave2 {("G1" 3)}
+wvSetPosition -win $_nWave2 {("G1" 4)}
+wvSetPosition -win $_nWave2 {("G1" 4)}
+wvAddSignal -win $_nWave2 -clear
+wvAddSignal -win $_nWave2 -group {"G1" \
+{/tb_top/wrapper_i/top_i/core_i/if_stage_i/clk} -height 16 \
+{/tb_top/wrapper_i/top_i/core_i/if_stage_i/rst_n} -height 16 \
+{/tb_top/wrapper_i/top_i/core_i/if_stage_i/pc_if_o\[31:0\]} -height 16 \
+{/tb_top/wrapper_i/top_i/core_i/if_stage_i/instr_rdata_i\[31:0\]} -height 16 \
+}
+wvAddSignal -win $_nWave2 -group {"G2" \
+{/tb_top/wrapper_i/top_i/core_i/id_stage_i/register_file_i/mem\[31:0\]} -height 16 \
+}
+wvAddSignal -win $_nWave2 -group {"G3" \
+}
+wvSelectSignal -win $_nWave2 {( "G1" 4 )} 
+wvSetPosition -win $_nWave2 {("G1" 4)}
+wvGetSignalSetScope -win $_nWave2 "/tb_top/wrapper_i/top_i/core_i/id_stage_i"
+wvSetPosition -win $_nWave2 {("G2" 1)}
+wvSetPosition -win $_nWave2 {("G2" 1)}
+wvAddSignal -win $_nWave2 -clear
+wvAddSignal -win $_nWave2 -group {"G1" \
+{/tb_top/wrapper_i/top_i/core_i/if_stage_i/clk} -height 16 \
+{/tb_top/wrapper_i/top_i/core_i/if_stage_i/rst_n} -height 16 \
+{/tb_top/wrapper_i/top_i/core_i/if_stage_i/pc_if_o\[31:0\]} -height 16 \
+{/tb_top/wrapper_i/top_i/core_i/if_stage_i/instr_rdata_i\[31:0\]} -height 16 \
+}
+wvAddSignal -win $_nWave2 -group {"G2" \
+{/tb_top/wrapper_i/top_i/core_i/id_stage_i/instr_rdata_i\[31:0\]} -height 16 \
+}
+wvAddSignal -win $_nWave2 -group {"G3" \
+{/tb_top/wrapper_i/top_i/core_i/id_stage_i/register_file_i/mem\[31:0\]} -height 16 \
+}
+wvAddSignal -win $_nWave2 -group {"G4" \
+}
+wvSelectSignal -win $_nWave2 {( "G2" 1 )} 
+wvSetPosition -win $_nWave2 {("G2" 1)}
+wvSetPosition -win $_nWave2 {("G2" 2)}
+wvSetPosition -win $_nWave2 {("G2" 2)}
+wvAddSignal -win $_nWave2 -clear
+wvAddSignal -win $_nWave2 -group {"G1" \
+{/tb_top/wrapper_i/top_i/core_i/if_stage_i/clk} -height 16 \
+{/tb_top/wrapper_i/top_i/core_i/if_stage_i/rst_n} -height 16 \
+{/tb_top/wrapper_i/top_i/core_i/if_stage_i/pc_if_o\[31:0\]} -height 16 \
+{/tb_top/wrapper_i/top_i/core_i/if_stage_i/instr_rdata_i\[31:0\]} -height 16 \
+}
+wvAddSignal -win $_nWave2 -group {"G2" \
+{/tb_top/wrapper_i/top_i/core_i/id_stage_i/instr_rdata_i\[31:0\]} -height 16 \
+{/tb_top/wrapper_i/top_i/core_i/id_stage_i/is_decoding_o} -height 16 \
+}
+wvAddSignal -win $_nWave2 -group {"G3" \
+{/tb_top/wrapper_i/top_i/core_i/id_stage_i/register_file_i/mem\[31:0\]} -height 16 \
+}
+wvAddSignal -win $_nWave2 -group {"G4" \
+}
+wvSelectSignal -win $_nWave2 {( "G2" 2 )} 
+wvSetPosition -win $_nWave2 {("G2" 2)}
+wvGetSignalSetScope -win $_nWave2 "/tb_top/wrapper_i/top_i/core_i/ex_stage_i"
+wvSetPosition -win $_nWave2 {("G3" 2)}
+wvSetPosition -win $_nWave2 {("G3" 2)}
+wvAddSignal -win $_nWave2 -clear
+wvAddSignal -win $_nWave2 -group {"G1" \
+{/tb_top/wrapper_i/top_i/core_i/if_stage_i/clk} -height 16 \
+{/tb_top/wrapper_i/top_i/core_i/if_stage_i/rst_n} -height 16 \
+{/tb_top/wrapper_i/top_i/core_i/if_stage_i/pc_if_o\[31:0\]} -height 16 \
+{/tb_top/wrapper_i/top_i/core_i/if_stage_i/instr_rdata_i\[31:0\]} -height 16 \
+}
+wvAddSignal -win $_nWave2 -group {"G2" \
+{/tb_top/wrapper_i/top_i/core_i/id_stage_i/instr_rdata_i\[31:0\]} -height 16 \
+{/tb_top/wrapper_i/top_i/core_i/id_stage_i/is_decoding_o} -height 16 \
+{/tb_top/wrapper_i/top_i/core_i/id_stage_i/register_file_i/mem\[31:0\]} -height 16 \
+}
+wvAddSignal -win $_nWave2 -group {"G3" \
+{/tb_top/wrapper_i/top_i/core_i/ex_stage_i/alu_operand_a_i\[31:0\]} -height 16 \
+{/tb_top/wrapper_i/top_i/core_i/ex_stage_i/alu_operand_b_i\[31:0\]} -height 16 \
+}
+wvAddSignal -win $_nWave2 -group {"G4" \
+}
+wvSelectSignal -win $_nWave2 {( "G3" 1 2 )} 
+wvSetPosition -win $_nWave2 {("G3" 2)}
+wvSetPosition -win $_nWave2 {("G3" 3)}
+wvSetPosition -win $_nWave2 {("G3" 3)}
+wvAddSignal -win $_nWave2 -clear
+wvAddSignal -win $_nWave2 -group {"G1" \
+{/tb_top/wrapper_i/top_i/core_i/if_stage_i/clk} -height 16 \
+{/tb_top/wrapper_i/top_i/core_i/if_stage_i/rst_n} -height 16 \
+{/tb_top/wrapper_i/top_i/core_i/if_stage_i/pc_if_o\[31:0\]} -height 16 \
+{/tb_top/wrapper_i/top_i/core_i/if_stage_i/instr_rdata_i\[31:0\]} -height 16 \
+}
+wvAddSignal -win $_nWave2 -group {"G2" \
+{/tb_top/wrapper_i/top_i/core_i/id_stage_i/instr_rdata_i\[31:0\]} -height 16 \
+{/tb_top/wrapper_i/top_i/core_i/id_stage_i/is_decoding_o} -height 16 \
+{/tb_top/wrapper_i/top_i/core_i/id_stage_i/register_file_i/mem\[31:0\]} -height 16 \
+}
+wvAddSignal -win $_nWave2 -group {"G3" \
+{/tb_top/wrapper_i/top_i/core_i/ex_stage_i/alu_operand_a_i\[31:0\]} -height 16 \
+{/tb_top/wrapper_i/top_i/core_i/ex_stage_i/alu_operand_b_i\[31:0\]} -height 16 \
+{/tb_top/wrapper_i/top_i/core_i/ex_stage_i/alu_result\[31:0\]} -height 16 \
+}
+wvAddSignal -win $_nWave2 -group {"G4" \
+}
+wvSelectSignal -win $_nWave2 {( "G3" 3 )} 
+wvSetPosition -win $_nWave2 {("G3" 3)}
+wvSetPosition -win $_nWave2 {("G3" 3)}
+wvSetPosition -win $_nWave2 {("G3" 3)}
+wvAddSignal -win $_nWave2 -clear
+wvAddSignal -win $_nWave2 -group {"G1" \
+{/tb_top/wrapper_i/top_i/core_i/if_stage_i/clk} -height 16 \
+{/tb_top/wrapper_i/top_i/core_i/if_stage_i/rst_n} -height 16 \
+{/tb_top/wrapper_i/top_i/core_i/if_stage_i/pc_if_o\[31:0\]} -height 16 \
+{/tb_top/wrapper_i/top_i/core_i/if_stage_i/instr_rdata_i\[31:0\]} -height 16 \
+}
+wvAddSignal -win $_nWave2 -group {"G2" \
+{/tb_top/wrapper_i/top_i/core_i/id_stage_i/instr_rdata_i\[31:0\]} -height 16 \
+{/tb_top/wrapper_i/top_i/core_i/id_stage_i/is_decoding_o} -height 16 \
+{/tb_top/wrapper_i/top_i/core_i/id_stage_i/register_file_i/mem\[31:0\]} -height 16 \
+}
+wvAddSignal -win $_nWave2 -group {"G3" \
+{/tb_top/wrapper_i/top_i/core_i/ex_stage_i/alu_operand_a_i\[31:0\]} -height 16 \
+{/tb_top/wrapper_i/top_i/core_i/ex_stage_i/alu_operand_b_i\[31:0\]} -height 16 \
+{/tb_top/wrapper_i/top_i/core_i/ex_stage_i/alu_result\[31:0\]} -height 16 \
+}
+wvAddSignal -win $_nWave2 -group {"G4" \
+}
+wvSelectGroup -win $_nWave2 {G3}
+wvSetPosition -win $_nWave2 {("G3" 3)}
+wvGetSignalClose -win $_nWave2
+wvZoomIn -win $_nWave2
+wvZoomIn -win $_nWave2
+wvZoomIn -win $_nWave2
+wvZoomIn -win $_nWave2
+wvZoomIn -win $_nWave2
+wvZoomIn -win $_nWave2
+wvZoomIn -win $_nWave2
+wvZoomIn -win $_nWave2
+wvZoomIn -win $_nWave2
+wvZoomIn -win $_nWave2
+wvZoomIn -win $_nWave2
+wvZoomIn -win $_nWave2
+wvZoomIn -win $_nWave2
+wvZoomIn -win $_nWave2
+wvZoomIn -win $_nWave2
+wvZoomOut -win $_nWave2
+wvZoomOut -win $_nWave2
+wvSelectGroup -win $_nWave2 {G1}
+wvSelectGroup -win $_nWave2 {G2}
+wvSelectGroup -win $_nWave2 {G1}
+wvSelectGroup -win $_nWave2 {G4}
+wvRenameGroup -win $_nWave2 {G4} {WB}
+wvSelectGroup -win $_nWave2 {G1}
+wvSelectGroup -win $_nWave2 {G1}
+wvRenameGroup -win $_nWave2 {G1} {IF}
+wvSelectGroup -win $_nWave2 {G2}
+wvRenameGroup -win $_nWave2 {G2} {ID}
+wvSelectGroup -win $_nWave2 {G3}
+wvRenameGroup -win $_nWave2 {G3} {EX}
+wvSaveSignal -win $_nWave2 \
+           "/home/ic_contest/diclab008/project/cv32e40p/example_tb/core/signal.rc"
+wvZoomOut -win $_nWave2
+wvSelectSignal -win $_nWave2 {( "EX" 1 )} 
+wvSetSearchMode -win $_nWave2 -value 
+wvSetSearchMode -win $_nWave2 -value A
+wvSearchNext -win $_nWave2
+wvSetCursor -win $_nWave2 5280113.244915 -snap {("EX" 3)}
+wvSelectSignal -win $_nWave2 {( "ID" 3 )} 
+wvSetPosition -win $_nWave2 {("ID" 3)}
+wvExpandBus -win $_nWave2
+wvSetPosition -win $_nWave2 {("EX" 3)}
+wvSelectSignal -win $_nWave2 {( "ID" 16 )} 
+wvSelectSignal -win $_nWave2 {( "ID" 25 )} 
+wvSelectSignal -win $_nWave2 {( "ID" 20 )} 
+wvSelectSignal -win $_nWave2 {( "ID" 24 )} 
+wvScrollUp -win $_nWave2 14
+wvSelectSignal -win $_nWave2 {( "ID" 3 )} 
+wvSetPosition -win $_nWave2 {("ID" 3)}
+wvCollapseBus -win $_nWave2
+wvSetPosition -win $_nWave2 {("ID" 3)}
+wvSetPosition -win $_nWave2 {("EX" 3)}
+wvSelectSignal -win $_nWave2 {( "IF" 2 )} 
+wvSetCursor -win $_nWave2 44837.046423 -snap {("IF" 2)}
+wvSelectSignal -win $_nWave2 {( "ID" 3 )} 
+wvSetPosition -win $_nWave2 {("ID" 3)}
+wvExpandBus -win $_nWave2
+wvSetPosition -win $_nWave2 {("EX" 3)}
+wvScrollDown -win $_nWave2 2
+wvSelectSignal -win $_nWave2 {( "ID" 25 )} 
+wvSetSearchMode -win $_nWave2 -anyChange
+wvSearchNext -win $_nWave2
+wvSearchNext -win $_nWave2
+wvSearchNext -win $_nWave2
+wvSearchNext -win $_nWave2
+wvSearchNext -win $_nWave2
+wvSearchNext -win $_nWave2
+wvSearchNext -win $_nWave2
+wvSearchNext -win $_nWave2
+wvSearchNext -win $_nWave2
+wvSearchNext -win $_nWave2
+wvScrollDown -win $_nWave2 3
+wvScrollUp -win $_nWave2 19
+wvSelectSignal -win $_nWave2 {( "ID" 3 )} 
+wvSetPosition -win $_nWave2 {("ID" 3)}
+wvCollapseBus -win $_nWave2
+wvSetPosition -win $_nWave2 {("ID" 3)}
+wvSetPosition -win $_nWave2 {("EX" 3)}
+wvSetCursor -win $_nWave2 5150444.727218 -snap {("IF" 4)}
+wvSetCursor -win $_nWave2 5161006.342597 -snap {("IF" 4)}
+wvSetCursor -win $_nWave2 5271803.666202 -snap {("EX" 1)}
+wvGetSignalOpen -win $_nWave2
+wvGetSignalSetScope -win $_nWave2 "/_vcs_msglog"
+wvGetSignalSetScope -win $_nWave2 "/tb_top"
+wvGetSignalSetScope -win $_nWave2 "/tb_top/wrapper_i"
+wvGetSignalSetScope -win $_nWave2 "/tb_top/wrapper_i/ram_i"
+wvGetSignalSetScope -win $_nWave2 "/tb_top/wrapper_i/top_i"
+wvGetSignalSetScope -win $_nWave2 "/tb_top/wrapper_i/top_i/core_i"
+wvGetSignalSetScope -win $_nWave2 "/tb_top/wrapper_i/top_i/core_i/ex_stage_i"
+wvGetSignalSetScope -win $_nWave2 "/tb_top/wrapper_i/top_i/core_i/id_stage_i"
+wvGetSignalSetScope -win $_nWave2 "/tb_top/wrapper_i/top_i/core_i/ex_stage_i"
+wvGetSignalOpen -win $_nWave2
+wvGetSignalSetScope -win $_nWave2 "/_vcs_msglog"
+wvGetSignalSetScope -win $_nWave2 "/tb_top"
+wvGetSignalSetScope -win $_nWave2 "/tb_top/wrapper_i"
+wvGetSignalSetScope -win $_nWave2 "/tb_top/wrapper_i/ram_i"
+wvGetSignalSetScope -win $_nWave2 "/tb_top/wrapper_i/top_i"
+wvGetSignalSetScope -win $_nWave2 "/tb_top/wrapper_i/top_i/core_i"
+wvGetSignalSetScope -win $_nWave2 "/tb_top/wrapper_i/top_i/core_i/ex_stage_i"
+wvGetSignalSetScope -win $_nWave2 "/tb_top/wrapper_i/top_i/core_i/id_stage_i"
+wvGetSignalSetScope -win $_nWave2 "/tb_top/wrapper_i/top_i/core_i/ex_stage_i"
+wvSaveSignal -win $_nWave2 \
+           "/home/ic_contest/diclab008/project/cv32e40p/example_tb/core/signal.rc"
+debExit

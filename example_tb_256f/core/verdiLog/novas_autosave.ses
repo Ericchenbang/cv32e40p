@@ -1,0 +1,96 @@
+@verdi rc file Version 1.0
+[General]
+saveDB = TRUE
+relativePath = FALSE
+saveSingleView = FALSE
+saveNWaveWinId = 
+VerdiVersion = Verdi_X-2025.06
+[KeyNote]
+Line1 = Automatic Backup 0
+Line2 = Save Open Database Information: Yes
+Line3 = Path Option: Absolute Paths
+Line4 = Windows Option: All Windows
+[OneSearch]
+isExisted = TRUE
+[TestBench]
+ConstrViewShow = 0
+InherViewShow = 0
+FSDBMsgShow = 0
+AnnotationShow = 0
+Console = FALSE
+powerDumped = 0
+[fusa]
+fdb_server = 
+fdb_proj = 
+fdb_campaign = 
+fdb_tool = 
+[hb]
+postSimFile = /home/ic_contest/diclab008/project/cv32e40p/example_tb/core/riscy_tb.vcd.fsdb
+syncTime = 0
+viewport = 318 82 900 700 0 0 249 898
+activeNode = "cv32e40p_tb_wrapper"
+activeScope = "cv32e40p_tb_wrapper"
+activeFile = "../../rtl/../bhv/cv32e40p_tb_wrapper.sv"
+interactiveMode = False
+viewType = Source
+simulatorMode = False
+sourceBeginLine = 49
+baMode = False
+srcLineNum = True
+AutoWrap = True
+IdentifyFalseLogic = False
+syncSignal = False
+traceMode = Hierarchical
+showTraceInSchema = True
+paMode = False
+funcMode = False
+powerAwareAnnot = True
+safetyAwareAnnot = True
+amsAnnot = True
+DnDtraceCrossHierOnly = True
+leadingZero = False
+signalPane = False
+SourceVerticalScrollLines = 5
+Scope1 = "cv32e40p_tb_wrapper"
+multipleSelection = 1 49 2 0 0
+sdfCheckUndef = FALSE
+simFlow = FALSE
+[hb.design]
+importCmd = "-f" "../../cv32e40p_manifest.flist" "include/perturbation_pkg.sv" "cv32e40p_random_interrupt_generator.sv" "dp_ram.sv" "tb_top.sv" "cv32e40p_tb_subsystem.sv" "riscv_rvalid_stall.sv" "riscv_gnt_stall.sv" "amo_shim.sv" "mm_ram.sv" 
+invokeDir = /home/ic_contest/diclab008/project/cv32e40p/example_tb/core
+[hb.sourceTab.1]
+scope = cv32e40p_tb_wrapper
+File = /home/ic_contest/diclab008/project/cv32e40p/bhv/cv32e40p_tb_wrapper.sv
+Line = 50
+[nMemoryManager]
+WaveformFile = /home/ic_contest/diclab008/project/cv32e40p/example_tb/core/riscy_tb.vcd.fsdb
+UserActionNum = 0
+nMemWindowNum = 0
+[wave.0]
+viewPort = 0 11 900 275 182 65
+primaryWindow = TRUE
+SessionFile = /home/ic_contest/diclab008/project/cv32e40p/example_tb/core/verdiLog/novas_autosave.ses.wave.0
+displayGrid = FALSE
+hierarchicalName = FALSE
+waveformToolTip = FALSE
+snap = TRUE
+displayLeadingZeros = FALSE
+displayGridLine = FALSE
+fixDelta = FALSE
+displayCursorMarker = FALSE
+autoUpdate = FALSE
+highlightGlitchs = FALSE
+waveformSyncCursorMarker = FALSE
+waveformSyncHorizontalRange = FALSE
+waveformSyncVerticalscroll = FALSE
+displayErrors = TRUE
+displayMsgSymbols = TRUE
+showMsgDescriptions = TRUE
+autoFit = FALSE
+displayDeltaY = FALSE
+centerCursor = FALSE
+fsaRegMask = TRUE
+fsaCoreMask = TRUE
+fsaSfsmMask = TRUE
+fsaEcrMask = TRUE
+tPropMask = TRUE
