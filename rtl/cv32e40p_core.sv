@@ -241,6 +241,25 @@ module cv32e40p_core
   logic                                     regfile_alu_we_fw_power;
   logic        [                31:0]       regfile_alu_wdata_fw;
 
+  // SIMD RF internal wires
+  logic [63:0] simd_rf_rdata_0, simd_rf_rdata_1, simd_rf_rdata_2;
+  logic [63:0] simd_rf_rdata_3, simd_rf_rdata_4;
+  logic [6:0]  simd_rf_waddr_a;
+  logic [63:0] simd_rf_wdata_a;
+  logic        simd_rf_we_a;
+  logic [6:0]  simd_rf_waddr_b;
+  logic [63:0] simd_rf_wdata_b;
+  logic        simd_rf_we_b;
+
+  // Stub tie-offs -- Phase 3 decoder will drive these
+  assign simd_rf_waddr_a = '0;
+  assign simd_rf_wdata_a = '0;
+  assign simd_rf_we_a    = 1'b0;
+  assign simd_rf_waddr_b = '0;
+  assign simd_rf_wdata_b = '0;
+  assign simd_rf_we_b    = 1'b0;
+
+
   // CSR control
   logic                                     csr_access_ex;
   csr_opcode_e                              csr_op_ex;
@@ -713,6 +732,20 @@ module cv32e40p_core
       .regfile_alu_we_fw_i      (regfile_alu_we_fw),
       .regfile_alu_we_fw_power_i(regfile_alu_we_fw_power),
       .regfile_alu_wdata_fw_i   (regfile_alu_wdata_fw),
+
+      .simd_rf_rdata_0_o (simd_rf_rdata_0),
+      .simd_rf_rdata_1_o (simd_rf_rdata_1),
+      .simd_rf_rdata_2_o (simd_rf_rdata_2),
+      .simd_rf_rdata_3_o (simd_rf_rdata_3),
+      .simd_rf_rdata_4_o (simd_rf_rdata_4),
+
+      .simd_rf_waddr_a_i (simd_rf_waddr_a),
+      .simd_rf_wdata_a_i (simd_rf_wdata_a),
+      .simd_rf_we_a_i    (simd_rf_we_a),
+
+      .simd_rf_waddr_b_i (simd_rf_waddr_b),
+      .simd_rf_wdata_b_i (simd_rf_wdata_b),
+      .simd_rf_we_b_i    (simd_rf_we_b),
 
       // from ALU
       .mult_multicycle_i(mult_multicycle),

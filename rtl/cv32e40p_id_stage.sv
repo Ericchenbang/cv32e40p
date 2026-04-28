@@ -234,6 +234,23 @@ module cv32e40p_id_stage
     input logic        regfile_alu_we_fw_power_i,
     input logic [31:0] regfile_alu_wdata_fw_i,
 
+    // SIMD RF read ports (5 x 64-bit) -- outputs to EX stage
+    output logic [63:0] simd_rf_rdata_0_o,
+    output logic [63:0] simd_rf_rdata_1_o,
+    output logic [63:0] simd_rf_rdata_2_o,
+    output logic [63:0] simd_rf_rdata_3_o,
+    output logic [63:0] simd_rf_rdata_4_o,
+
+    // SIMD RF write port A (WB writeback path)
+    input  logic [6:0]  simd_rf_waddr_a_i,
+    input  logic [63:0] simd_rf_wdata_a_i,
+    input  logic        simd_rf_we_a_i,
+
+    // SIMD RF write port B (ALU result / forwarding path)
+    input  logic [6:0]  simd_rf_waddr_b_i,
+    input  logic [63:0] simd_rf_wdata_b_i,
+    input  logic        simd_rf_we_b_i,
+
     // from ALU
     input  logic        mult_multicycle_i,    // when we need multiple cycles in the multiplier and use op c as storage
 
@@ -962,6 +979,48 @@ module cv32e40p_id_stage
       .we_b_i   (regfile_alu_we_fw_power_i)
   );
 
+  ///////////////////////////////////////////////////////////////
+  //  ____ ___ __  __ ____    ____  _____                     //
+  // / ___|_ _|  \/  |  _ \  |  _ \|  ___|                   //
+  // \___ \| || |\/| | | | | | |_) | |_                       //
+  //  ___) | || |  | | |_| | |  _ <|  _|                      //
+  // |____/___|_|  |_|____/  |_| \_\_|                        //
+  //  (5 banks x 16 rows x 64-bit, 5 read ports, 2 write)     //
+  ///////////////////////////////////////////////////////////////
+
+  // Internal wires for SIMD RF read addresses (To be driven by the Decoder later)
+  logic [6:0] simd_rf_raddr_0, simd_rf_raddr_1, simd_rf_raddr_2, simd_rf_raddr_3, simd_rf_raddr_4;
+
+  // Stub tie-offs for now
+  assign simd_rf_raddr_0 = '0;
+  assign simd_rf_raddr_1 = '0;
+  assign simd_rf_raddr_2 = '0;
+  assign simd_rf_raddr_3 = '0;
+  assign simd_rf_raddr_4 = '0;
+
+  cv32e40p_simd_rf simd_rf_i (
+      .clk    (clk),
+      .rst_n  (rst_n),
+
+      .raddr_0_i (simd_rf_raddr_0),
+      .rdata_0_o (simd_rf_rdata_0_o),
+      .raddr_1_i (simd_rf_raddr_1),
+      .rdata_1_o (simd_rf_rdata_1_o),
+      .raddr_2_i (simd_rf_raddr_2),
+      .rdata_2_o (simd_rf_rdata_2_o),
+      .raddr_3_i (simd_rf_raddr_3),
+      .rdata_3_o (simd_rf_rdata_3_o),
+      .raddr_4_i (simd_rf_raddr_4),
+      .rdata_4_o (simd_rf_rdata_4_o),
+
+      .waddr_a_i (simd_rf_waddr_a_i),
+      .wdata_a_i (simd_rf_wdata_a_i),
+      .we_a_i    (simd_rf_we_a_i),
+
+      .waddr_b_i (simd_rf_waddr_b_i),
+      .wdata_b_i (simd_rf_wdata_b_i),
+      .we_b_i    (simd_rf_we_b_i)
+  );
 
   ///////////////////////////////////////////////
   //  ____  _____ ____ ___  ____  _____ ____   //
