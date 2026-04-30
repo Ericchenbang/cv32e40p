@@ -125,15 +125,17 @@ module cv32e40p_ex_stage
     input logic        lsu_en_i,
     input logic [319:0] lsu_rdata_i,
 
-    input logic         slh_en_i,
-    input logic [319:0] slh_operand_a_i,
-    input logic [319:0] slh_operand_b_i,
-    input logic [319:0] slh_operand_c_i,
+    input logic   [1:0] slh_alu_operator_i,
+    input logic         slh_alu_en_i,
+    input logic [319:0] slh_alu_operand_a_i,
+    input logic [319:0] slh_alu_operand_b_i,
+    input logic [319:0] slh_alu_operand_c_i,
 
     // input from ID stage
     input logic       branch_in_ex_i,
     input logic [5:0] regfile_alu_waddr_i,
     input logic       regfile_alu_we_i,
+    input logic       slh_regfile_alu_we_i,
 
     // directly passed through to WB stage, not used in EX
     input logic       regfile_we_i,
@@ -157,6 +159,8 @@ module cv32e40p_ex_stage
     output logic        regfile_alu_we_fw_o,
     output logic        regfile_alu_we_fw_power_o,
     output logic [31:0] regfile_alu_wdata_fw_o,  // forward to RF and ID/EX pipe, ALU & MUL
+    output logic        slh_regfile_alu_we_fw_power_o,
+    output logic [319:0] slh_regfile_alu_wdata_fw_o,
 
     // To IF: Jump and branch target and decision
     output logic [31:0] jump_target_o,
@@ -175,6 +179,7 @@ module cv32e40p_ex_stage
   logic [                31:0] alu_result;
   logic [                31:0] mult_result;
   logic                        alu_cmp_result;
+  logic [               319:0] slh_alu_result;
 
   logic                        regfile_we_lsu;
   logic                        slh_regfile_we_lsu;
@@ -209,6 +214,8 @@ module cv32e40p_ex_stage
     regfile_alu_we_fw_o       = 1'b0;
     regfile_alu_we_fw_power_o = 1'b0;
     wb_contention             = 1'b0;
+    slh_regfile_alu_wdata_fw_o = '0;
+    slh_regfile_alu_we_fw_power_o = 1'b0;
 
     // APU single cycle operations, and multicycle operations (> 2cycles) are written back on ALU port
     if (apu_valid & (apu_singlecycle | apu_multicycle)) begin
@@ -225,10 +232,12 @@ module cv32e40p_ex_stage
       regfile_alu_we_fw_power_o = (COREV_PULP == 0) ? regfile_alu_we_i & ~apu_en_i : 
                                                      regfile_alu_we_i & ~apu_en_i &
                                                      mult_ready & alu_ready & lsu_ready_ex_i;
+      slh_regfile_alu_we_fw_power_o = slh_regfile_alu_we_i;
       regfile_alu_waddr_fw_o = regfile_alu_waddr_i;
       if (alu_en_i) regfile_alu_wdata_fw_o = alu_result;
       if (mult_en_i) regfile_alu_wdata_fw_o = mult_result;
       if (csr_access_i) regfile_alu_wdata_fw_o = csr_rdata_i;
+      if (slh_alu_en_i) slh_regfile_alu_wdata_fw_o = slh_alu_result;
     end
   end
 
@@ -460,6 +469,14 @@ module cv32e40p_ex_stage
   endgenerate
 
   assign apu_busy_o = apu_active;
+
+  cv32e40p_slh_alu slh_alu_i (
+      .operator_i (slh_alu_operator_i),
+      .operand_a_i(slh_alu_operand_a_i),
+      .operand_b_i(slh_alu_operand_b_i),
+      .operand_c_i(slh_alu_operand_c_i),
+      .result_o   (slh_alu_result)
+  );
 
   ///////////////////////////////////////
   // EX/WB Pipeline Register           //

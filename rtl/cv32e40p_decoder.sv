@@ -29,7 +29,7 @@ module cv32e40p_decoder
   import cv32e40p_pkg::*;
   import cv32e40p_apu_core_pkg::*;
   import cv32e40p_fpu_pkg::*;
-  import cv32e40p_rvslh_pkg::*;
+  import cv32e40p_slh_pkg::*;
 #(
   parameter COREV_PULP        = 1,              // PULP ISA Extension (including PULP specific CSRs and hardware loop, excluding cv.elw)
   parameter COREV_CLUSTER     = 0,              // PULP ISA Extension cv.elw (need COREV_PULP = 1)
@@ -120,10 +120,12 @@ module cv32e40p_decoder
   output logic [1:0]             apu_lat_o,
   output logic [2:0]             fp_rnd_mode_o,
 
-  output logic slh_en_o,
-  output logic slh_rega_used_o,
-  output logic slh_regb_used_o,
-  output logic slh_regc_used_o,
+  output logic [1:0]  slh_alu_operator_o,
+  output logic        slh_en_o,
+  output logic        slh_op_c_imm_o,
+  output logic        slh_rega_used_o,
+  output logic        slh_regb_used_o,
+  output logic        slh_regc_used_o,
 
   // register file related signals
   output logic        regfile_mem_we_o,        // write enable for regfile
@@ -131,6 +133,8 @@ module cv32e40p_decoder
   output logic        regfile_alu_we_dec_o,    // write enable for 2nd regfile port without deassert
   output logic        regfile_alu_waddr_sel_o, // Select register write address for ALU/MUL operations
   output logic        slh_regfile_mem_we_o,
+  output logic        slh_regfile_alu_we_o,
+  output logic        slh_regfile_alu_we_dec_o,
 
   // CSR manipulation
   output logic        csr_access_o,            // access to CSR
@@ -173,6 +177,7 @@ module cv32e40p_decoder
   logic       regfile_mem_we;
   logic       regfile_alu_we;
   logic       slh_regfile_mem_we;
+  logic       slh_regfile_alu_we;
   logic       data_req;
   logic       vdata_req;
   logic [2:0] hwlp_we;
@@ -246,10 +251,13 @@ module cv32e40p_decoder
     fp_op_group                    = ADDMUL;
 
     slh_en                         = 1'b0;
+    slh_op_c_imm_o                 = 1'b0;
+    slh_alu_operator_o             = SLH_ALU_XOR3V;
 
     regfile_mem_we                 = 1'b0;
     regfile_alu_we                 = 1'b0;
     slh_regfile_mem_we             = 1'b0;
+    slh_regfile_alu_we             = 1'b0;
     regfile_alu_waddr_sel_o        = 1'b1;
 
     prepost_useincr_o              = 1'b1;
@@ -3050,19 +3058,22 @@ module cv32e40p_decoder
       end
 
       OPCODE_SLH: begin
+        slh_en                  = 1'b1;
         unique case (instr_rdata_i[14:12])
-        3'b100: begin  // load vector
-          vdata_req          = 1'b1;
-          slh_regfile_mem_we = 1'b1;
-          rega_used_o        = 1'b1;
-          alu_operator_o     = ALU_ADD;
-          // offset from immediate
-          alu_op_b_mux_sel_o = OP_B_IMM;
-          imm_b_mux_sel_o    = IMMB_I;
-
-          // sign/zero extension
-          data_sign_extension_o = 2'b10;
-          data_type_o = 2'b11;
+        3'b000: begin 
+          if (instr_rdata_i[24]) begin  // rxorv
+            illegal_insn_o = 1'b1;
+          end else begin
+            if (instr_rdata_i[24]) begin  // xornav
+              illegal_insn_o = 1'b1;
+            end else begin  // xor3v
+              slh_rega_used_o    = 1'b1;
+              slh_regb_used_o    = 1'b1;
+              slh_regc_used_o    = 1'b1;
+              slh_regfile_alu_we = 1'b1;
+              slh_alu_operator_o = SLH_ALU_XOR3V;
+            end
+          end
         end
         default: illegal_insn_o = 1'b1;
         endcase
@@ -3086,6 +3097,7 @@ module cv32e40p_decoder
   assign regfile_mem_we_o            = (deassert_we_i) ? 1'b0          : regfile_mem_we;
   assign slh_regfile_mem_we_o        = (deassert_we_i) ? 1'b0          : slh_regfile_mem_we;
   assign regfile_alu_we_o            = (deassert_we_i) ? 1'b0          : regfile_alu_we;
+  assign slh_regfile_alu_we_o        = (deassert_we_i) ? 1'b0          : slh_regfile_alu_we;
   assign data_req_o                  = (deassert_we_i) ? 1'b0          : data_req;
   assign vdata_req_o                 = (deassert_we_i) ? 1'b0          : vdata_req;
   assign hwlp_we_o                   = (deassert_we_i) ? 3'b0          : hwlp_we;
@@ -3094,5 +3106,6 @@ module cv32e40p_decoder
 
   assign ctrl_transfer_insn_in_dec_o  = ctrl_transfer_insn;
   assign regfile_alu_we_dec_o         = regfile_alu_we;
+  assign slh_regfile_alu_we_dec_o     = slh_regfile_alu_we;
 
 endmodule // cv32e40p_decoder

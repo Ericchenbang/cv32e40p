@@ -115,6 +115,7 @@ module cv32e40p_id_stage
 
     output logic [5:0] regfile_alu_waddr_ex_o,
     output logic       regfile_alu_we_ex_o,
+    output logic       slh_regfile_alu_we_ex_o,
 
     // ALU
     output logic              alu_en_ex_o,
@@ -124,6 +125,7 @@ module cv32e40p_id_stage
     output logic        [1:0] alu_clpx_shift_ex_o,
 
     output logic              slh_en_ex_o,
+    output logic        [1:0] slh_alu_operator_ex_o,
 
     // MUL
     output mul_opcode_e        mult_operator_ex_o,
@@ -248,7 +250,6 @@ module cv32e40p_id_stage
     input logic [319:0] slh_regfile_wdata_wb_i, // From wb_stage: selects data from data memory
 
     input logic [  3:0] slh_regfile_alu_waddr_fw_i,
-    input logic         slh_regfile_alu_we_fw_i,
     input logic         slh_regfile_alu_we_fw_power_i,
     input logic [319:0] slh_regfile_alu_wdata_fw_i,
 
@@ -345,6 +346,7 @@ module cv32e40p_id_stage
   logic [31:0] imm_shuffleh_type;
   logic [31:0] imm_shuffle_type;
   logic [31:0] imm_clip_type;
+  logic [319:0] slh_imm_r4_type;
 
   logic [31:0] imm_a;  // contains the immediate for operand b
   logic [31:0] imm_b;  // contains the immediate for operand b
@@ -382,7 +384,10 @@ module cv32e40p_id_stage
   logic [319:0] slh_regfile_data_ra_id;
   logic [319:0] slh_regfile_data_rb_id;
   logic [319:0] slh_regfile_data_rc_id;
+  logic [  1:0] slh_alu_operator;
+  logic slh_regfile_alu_we_id, slh_regfile_alu_we_dec_id;
   logic slh_en;
+  logic slh_op_c_imm;
 
   // ALU Control
   logic alu_en;
@@ -545,6 +550,7 @@ module cv32e40p_id_stage
   assign imm_sb_type = {{19{instr[31]}}, instr[31], instr[7], instr[30:25], instr[11:8], 1'b0};
   assign imm_u_type = {instr[31:12], 12'b0};
   assign imm_uj_type = {{12{instr[31]}}, instr[19:12], instr[20], instr[30:21], 1'b0};
+  assign slh_imm_r4_type = {315'd0, instr[31:27]};
 
   // immediate for CSR manipulatin (zero extended)
   assign imm_z_type = {27'b0, instr[REG_S1_MSB:REG_S1_LSB]};
@@ -821,12 +827,15 @@ module cv32e40p_id_stage
   end
 
   always_comb begin : slh_operand_c_fw_mux
-    case (slh_operand_c_fw_mux_sel)
-      SEL_FW_EX:   slh_operand_c_fw_id = slh_regfile_alu_wdata_fw_i;
-      SEL_FW_WB:   slh_operand_c_fw_id = slh_regfile_wdata_wb_i;
-      SEL_REGFILE: slh_operand_c_fw_id = slh_regfile_data_rc_id;
-      default:     slh_operand_c_fw_id = slh_regfile_data_rc_id;
-    endcase
+    if (slh_op_c_imm) 
+      slh_operand_c_fw_id = slh_imm_r4_type;
+    else
+      case (slh_operand_c_fw_mux_sel)
+        SEL_FW_EX:   slh_operand_c_fw_id = slh_regfile_alu_wdata_fw_i;
+        SEL_FW_WB:   slh_operand_c_fw_id = slh_regfile_wdata_wb_i;
+        SEL_REGFILE: slh_operand_c_fw_id = slh_regfile_data_rc_id;
+        default:     slh_operand_c_fw_id = slh_regfile_data_rc_id;
+      endcase
     ;  // case (slh_operand_c_fw_mux_sel)
   end
 
@@ -1189,6 +1198,8 @@ slh_register_file_i (
 
       // SLH-ALU signals
       .slh_en_o(slh_en),
+      .slh_op_c_imm_o(slh_op_c_imm),
+      .slh_alu_operator_o(slh_alu_operator),
 
       // Register file control signals
       .regfile_mem_we_o       (regfile_we_id),
@@ -1196,6 +1207,8 @@ slh_register_file_i (
       .regfile_alu_we_dec_o   (regfile_alu_we_dec_id),
       .regfile_alu_waddr_sel_o(regfile_alu_waddr_mux_sel),
       .slh_regfile_mem_we_o   (slh_regfile_we_id),
+      .slh_regfile_alu_we_o   (slh_regfile_alu_we_id),
+      .slh_regfile_alu_we_dec_o(slh_regfile_alu_we_dec_id),
 
       // CSR control signals
       .csr_access_o      (csr_access),
@@ -1382,7 +1395,7 @@ slh_register_file_i (
 
       // regfile port 2
       .regfile_alu_we_fw_i(regfile_alu_we_fw_i),
-      .slh_regfile_alu_we_fw_i(slh_regfile_alu_we_fw_i),
+      .slh_regfile_alu_we_fw_i(slh_regfile_alu_we_fw_power_i),
 
       // Forwarding detection signals
       .reg_d_ex_is_reg_a_i (reg_d_ex_is_reg_a_id),
@@ -1626,6 +1639,7 @@ slh_register_file_i (
 
       regfile_alu_waddr_ex_o <= 6'b0;
       regfile_alu_we_ex_o    <= 1'b0;
+      slh_regfile_alu_we_ex_o<= 1'b0;
       prepost_useincr_ex_o   <= 1'b0;
 
       csr_access_ex_o        <= 1'b0;
@@ -1733,7 +1747,8 @@ slh_register_file_i (
         end
 
         regfile_alu_we_ex_o <= regfile_alu_we_id;
-        if (regfile_alu_we_id) begin
+        slh_regfile_alu_we_ex_o <= slh_regfile_alu_we_id;
+        if (regfile_alu_we_id||slh_regfile_alu_we_id) begin
           regfile_alu_waddr_ex_o <= regfile_alu_waddr_id;
         end
 
@@ -1771,6 +1786,8 @@ slh_register_file_i (
         slh_regfile_we_ex_o  <= 1'b0;
 
         regfile_alu_we_ex_o  <= 1'b0;
+
+        slh_regfile_alu_we_ex_o<= 1'b0;
 
         csr_op_ex_o          <= CSR_OP_READ;
 

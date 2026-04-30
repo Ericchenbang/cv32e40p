@@ -226,6 +226,7 @@ module cv32e40p_core
   logic                                     perf_apu_wb;
 
   logic         slh_en_ex;
+  logic   [1:0] slh_alu_operator_ex;
   logic [319:0] slh_operand_a_ex;
   logic [319:0] slh_operand_b_ex;
   logic [319:0] slh_operand_c_ex;
@@ -243,11 +244,14 @@ module cv32e40p_core
 
   logic        [                 5:0]       regfile_alu_waddr_ex;
   logic                                     regfile_alu_we_ex;
+  logic                                     slh_regfile_alu_we_ex;
 
   logic        [                 5:0]       regfile_alu_waddr_fw;
   logic                                     regfile_alu_we_fw;
   logic                                     regfile_alu_we_fw_power;
   logic        [                31:0]       regfile_alu_wdata_fw;
+  logic                                     slh_regfile_alu_we_fw_power;
+  logic        [               319:0]       slh_regfile_alu_wdata_fw;
 
   // CSR control
   logic                                     csr_access_ex;
@@ -608,6 +612,7 @@ module cv32e40p_core
       .slh_regfile_we_ex_o(slh_regfile_we_ex),
 
       .regfile_alu_we_ex_o   (regfile_alu_we_ex),
+      .slh_regfile_alu_we_ex_o(slh_regfile_alu_we_ex),
       .regfile_alu_waddr_ex_o(regfile_alu_waddr_ex),
 
       // MUL
@@ -650,7 +655,8 @@ module cv32e40p_core
       .apu_perf_dep_o         (perf_apu_dep),
       .apu_busy_i             (apu_busy_o),
 
-      .slh_en_ex_o(slh_en_ex),
+      .slh_en_ex_o          (slh_en_ex),
+      .slh_alu_operator_ex_o(slh_alu_operator_ex),
 
       // CSR ID/EX
       .csr_access_ex_o      (csr_access_ex),
@@ -736,10 +742,9 @@ module cv32e40p_core
       .slh_regfile_we_wb_power_i(slh_regfile_we_wb_power),
       .slh_regfile_wdata_wb_i   (regfile_wdata),
 
-      .slh_regfile_alu_waddr_fw_i(0),
-      .slh_regfile_alu_we_fw_i   (0),
-      .slh_regfile_alu_we_fw_power_i(0),
-      .slh_regfile_alu_wdata_fw_i(0),
+      .slh_regfile_alu_waddr_fw_i(regfile_alu_waddr_fw[3:0]),
+      .slh_regfile_alu_we_fw_power_i(slh_regfile_alu_we_fw_power),
+      .slh_regfile_alu_wdata_fw_i(slh_regfile_alu_wdata_fw),
 
       // from ALU
       .mult_multicycle_i(mult_multicycle),
@@ -859,10 +864,11 @@ module cv32e40p_core
       .apu_result_i  (apu_result_i),
       .apu_flags_i   (apu_flags_i),
 
-      .slh_en_i(slh_en_ex),
-      .slh_operand_a_i(slh_operand_a_ex),
-      .slh_operand_b_i(slh_operand_b_ex),
-      .slh_operand_c_i(slh_operand_c_ex),
+      .slh_alu_en_i(slh_en_ex),
+      .slh_alu_operator_i(slh_alu_operator_ex),
+      .slh_alu_operand_a_i(slh_operand_a_ex),
+      .slh_alu_operand_b_i(slh_operand_b_ex),
+      .slh_alu_operand_c_i(slh_operand_c_ex),
 
       .lsu_en_i   (data_req_ex||vdata_req_ex),
       .lsu_rdata_i(lsu_rdata),
@@ -875,6 +881,7 @@ module cv32e40p_core
       .branch_in_ex_i     (branch_in_ex),
       .regfile_alu_waddr_i(regfile_alu_waddr_ex),
       .regfile_alu_we_i   (regfile_alu_we_ex),
+      .slh_regfile_alu_we_i(slh_regfile_alu_we_ex),
 
       .regfile_waddr_i (regfile_waddr_ex),
       .regfile_we_i    (regfile_we_ex),
@@ -897,6 +904,8 @@ module cv32e40p_core
       .regfile_alu_we_fw_o      (regfile_alu_we_fw),
       .regfile_alu_we_fw_power_o(regfile_alu_we_fw_power),
       .regfile_alu_wdata_fw_o   (regfile_alu_wdata_fw),
+      .slh_regfile_alu_we_fw_power_o(slh_regfile_alu_we_fw_power),
+      .slh_regfile_alu_wdata_fw_o   (slh_regfile_alu_wdata_fw),
 
       // stall control
       .is_decoding_i (is_decoding),
