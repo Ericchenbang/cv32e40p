@@ -1602,6 +1602,7 @@ slh_register_file_i (
       alu_is_subrot_ex_o     <= 1'b0;
 
       slh_en_ex_o            <= '0;
+      slh_alu_operator_ex_o  <= '0;
       slh_operand_a_ex_o     <= '0;
       slh_operand_b_ex_o     <= '0;
       slh_operand_c_ex_o     <= '0;
@@ -1704,9 +1705,10 @@ slh_register_file_i (
 
         slh_en_ex_o <= slh_en;
         if (slh_en) begin
-          slh_operand_a_ex_o <= slh_operand_a_fw_id;
-          slh_operand_b_ex_o <= slh_operand_b_fw_id;
-          slh_operand_c_ex_o <= slh_operand_c_fw_id;
+          slh_alu_operator_ex_o <= slh_alu_operator;
+          slh_operand_a_ex_o    <= slh_operand_a_fw_id;
+          slh_operand_b_ex_o    <= slh_operand_b_fw_id;
+          slh_operand_c_ex_o    <= slh_operand_c_fw_id;
         end
 
         mult_en_ex_o <= mult_en;

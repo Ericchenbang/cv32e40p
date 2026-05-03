@@ -3058,15 +3058,25 @@ module cv32e40p_decoder
       end
 
       OPCODE_SLH: begin
-        slh_en                  = 1'b1;
         unique case (instr_rdata_i[14:12])
         3'b000: begin 
-          if (instr_rdata_i[24]) begin  // rxorv
-            illegal_insn_o = 1'b1;
+          if (instr_rdata_i[25]) begin  // rxorv
+            slh_en             = 1'b1;
+            slh_rega_used_o    = 1'b1;
+            slh_regb_used_o    = 1'b1;
+            slh_op_c_imm_o     = 1'b1;
+            slh_regfile_alu_we = 1'b1;
+            slh_alu_operator_o = SLH_ALU_RXORV;
           end else begin
-            if (instr_rdata_i[24]) begin  // xornav
-              illegal_insn_o = 1'b1;
+            if (instr_rdata_i[26]) begin  // xornav
+              slh_en             = 1'b1;
+              slh_rega_used_o    = 1'b1;
+              slh_regb_used_o    = 1'b1;
+              slh_regc_used_o    = 1'b1;
+              slh_regfile_alu_we = 1'b1;
+              slh_alu_operator_o = SLH_ALU_XORNAV;
             end else begin  // xor3v
+              slh_en             = 1'b1;
               slh_rega_used_o    = 1'b1;
               slh_regb_used_o    = 1'b1;
               slh_regc_used_o    = 1'b1;
@@ -3074,6 +3084,12 @@ module cv32e40p_decoder
               slh_alu_operator_o = SLH_ALU_XOR3V;
             end
           end
+        end
+        3'b001: begin  // xorrv
+            slh_en             = 1'b1;
+            slh_rega_used_o    = 1'b1;
+            slh_regfile_alu_we = 1'b1;
+            slh_alu_operator_o = SLH_ALU_XORRV;
         end
         default: illegal_insn_o = 1'b1;
         endcase
