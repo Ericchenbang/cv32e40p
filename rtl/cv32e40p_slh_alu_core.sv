@@ -1,5 +1,5 @@
 
-`define ror64(SIG, R) {SIG[R-1:0],SIG[63:R]}
+`define rol64(SIG, OFFSET) {SIG[63-OFFSET:0],SIG[63:64-OFFSET]}
 
 module cv32e40p_slh_alu_core 
   import cv32e40p_slh_pkg::*;
@@ -25,48 +25,48 @@ always_comb begin : rotation
 
   case (operator_i)
   SLH_ALU_XORRV: begin
-    rotated_result = `ror64(xor_a_b, 63);
+    rotated_result = `rol64(xor_a_b, 1);
   end
   SLH_ALU_RXORV: begin
     if (SLH_ALU_CORE==0) begin
       unique case (r4_imm) 
       3'd0:    rotated_result = xor_a_b;
-      3'd1:    rotated_result = `ror64(xor_a_b, 1);
-      3'd2:    rotated_result = `ror64(xor_a_b, 62);
-      3'd3:    rotated_result = `ror64(xor_a_b, 28);
-      default: rotated_result = `ror64(xor_a_b, 27);
+      3'd1:    rotated_result = `rol64(xor_a_b, 36);
+      3'd2:    rotated_result = `rol64(xor_a_b, 3);
+      3'd3:    rotated_result = `rol64(xor_a_b, 41);
+      default: rotated_result = `rol64(xor_a_b, 18);
       endcase
     end else if (SLH_ALU_CORE==1) begin
       unique case (r4_imm) 
-      3'd0:    rotated_result = `ror64(xor_a_b, 36);
-      3'd1:    rotated_result = `ror64(xor_a_b, 44);
-      3'd2:    rotated_result = `ror64(xor_a_b, 6);
-      3'd3:    rotated_result = `ror64(xor_a_b, 55);
-      default: rotated_result = `ror64(xor_a_b, 20);
+      3'd0:    rotated_result = `rol64(xor_a_b, 1);
+      3'd1:    rotated_result = `rol64(xor_a_b, 44);
+      3'd2:    rotated_result = `rol64(xor_a_b, 10);
+      3'd3:    rotated_result = `rol64(xor_a_b, 45);
+      default: rotated_result = `rol64(xor_a_b, 2);
       endcase
     end else if (SLH_ALU_CORE==2) begin
       unique case (r4_imm) 
-      3'd0:    rotated_result = `ror64(xor_a_b, 3);
-      3'd1:    rotated_result = `ror64(xor_a_b, 10);
-      3'd2:    rotated_result = `ror64(xor_a_b, 43);
-      3'd3:    rotated_result = `ror64(xor_a_b, 25);
-      default: rotated_result = `ror64(xor_a_b, 39);
+      3'd0:    rotated_result = `rol64(xor_a_b, 62);
+      3'd1:    rotated_result = `rol64(xor_a_b, 6);
+      3'd2:    rotated_result = `rol64(xor_a_b, 43);
+      3'd3:    rotated_result = `rol64(xor_a_b, 15);
+      default: rotated_result = `rol64(xor_a_b, 61);
       endcase
     end else if (SLH_ALU_CORE==3) begin
       unique case (r4_imm) 
-      3'd0:    rotated_result = `ror64(xor_a_b, 41);
-      3'd1:    rotated_result = `ror64(xor_a_b, 45);
-      3'd2:    rotated_result = `ror64(xor_a_b, 15);
-      3'd3:    rotated_result = `ror64(xor_a_b, 21);
-      default: rotated_result = `ror64(xor_a_b, 8);
+      3'd0:    rotated_result = `rol64(xor_a_b, 28);
+      3'd1:    rotated_result = `rol64(xor_a_b, 55);
+      3'd2:    rotated_result = `rol64(xor_a_b, 25);
+      3'd3:    rotated_result = `rol64(xor_a_b, 21);
+      default: rotated_result = `rol64(xor_a_b, 56);
       endcase
     end else begin
       unique case (r4_imm) 
-      3'd0:    rotated_result = `ror64(xor_a_b, 18);
-      3'd1:    rotated_result = `ror64(xor_a_b, 2);
-      3'd2:    rotated_result = `ror64(xor_a_b, 61);
-      3'd3:    rotated_result = `ror64(xor_a_b, 56);
-      default: rotated_result = `ror64(xor_a_b, 14);
+      3'd0:    rotated_result = `rol64(xor_a_b, 27);
+      3'd1:    rotated_result = `rol64(xor_a_b, 20);
+      3'd2:    rotated_result = `rol64(xor_a_b, 39);
+      3'd3:    rotated_result = `rol64(xor_a_b, 8);
+      default: rotated_result = `rol64(xor_a_b, 14);
       endcase
     end
   end
@@ -77,13 +77,13 @@ always_comb begin
   if (operator_i==SLH_ALU_XORNAV)
     xor_post_operand_a = and_a_b;
   else
-    xor_post_operand_a = xor_a_b;
+    xor_post_operand_a = rotated_result;
 end
 
 always_comb begin
   case (operator_i)
   SLH_ALU_XOR3V:  result_o = xor_post;
-  SLH_ALU_XORRV:  result_o = rotated_result;
+  SLH_ALU_XORRV:  result_o = xor_post;
   SLH_ALU_RXORV:  result_o = rotated_result;
   SLH_ALU_XORNAV: result_o = xor_post;
   default:        result_o = '0;

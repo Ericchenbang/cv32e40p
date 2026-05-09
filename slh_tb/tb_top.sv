@@ -112,10 +112,8 @@ module tb_top();
     if (exit_valid) begin
       if (exit_value == 0) $display("EXIT SUCCESS");
       else $display("EXIT FAILURE: %d", exit_value);
-      if ($test$plusargs("verbose")) begin
-        for (i = 0; i<16; i+=1)
-          $display("slh regfile[%d]: %x", i, wrapper_i.top_i.core_i.id_stage_i.slh_register_file_i.mem[i]);
-      end
+      for (i = 0; i<16; i+=1)
+        $display("slh regfile[%d]: %x", i, wrapper_i.top_i.core_i.id_stage_i.slh_register_file_i.mem[i]);
       $finish;
     end
   end

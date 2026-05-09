@@ -34,9 +34,9 @@ logic [63:0] core_op_c_4;
 logic [63:0] core_result_4;
 
 always_comb begin : pre_proc
-  {core_op_a_0, core_op_a_1, core_op_a_2, core_op_a_3, core_op_a_4} = operand_a_i;
-  {core_op_b_0, core_op_b_1, core_op_b_2, core_op_b_3, core_op_b_4} = operand_b_i;
-  {core_op_c_0, core_op_c_1, core_op_c_2, core_op_c_3, core_op_c_4} = operand_c_i;
+  {core_op_a_4, core_op_a_3, core_op_a_2, core_op_a_1, core_op_a_0} = operand_a_i;
+  {core_op_b_4, core_op_b_3, core_op_b_2, core_op_b_1, core_op_b_0} = operand_b_i;
+  {core_op_c_4, core_op_c_3, core_op_c_2, core_op_c_1, core_op_c_0} = operand_c_i;
 
   case (operator_i)
   SLH_ALU_XORRV: begin
@@ -63,15 +63,15 @@ always_comb begin : pre_proc
 end
 
 always_comb begin : post_proc
-  result_o = {core_result_0, core_result_1, core_result_2, core_result_3, core_result_4};
+  result_o = {core_result_4, core_result_3, core_result_2, core_result_1, core_result_0};
   case (operator_i)
   SLH_ALU_RXORV: begin
     unique case (r4_imm) 
-      3'd0:    result_o = {core_result_0, core_result_2, core_result_4, core_result_1, core_result_3};
+      3'd0:    result_o = {core_result_2, core_result_4, core_result_1, core_result_3, core_result_0};
       3'd1:    result_o = {core_result_3, core_result_0, core_result_2, core_result_4, core_result_1};
-      3'd2:    result_o = {core_result_1, core_result_3, core_result_0, core_result_2, core_result_4};
-      3'd3:    result_o = {core_result_4, core_result_1, core_result_3, core_result_0, core_result_2};
-      default: result_o = {core_result_2, core_result_4, core_result_1, core_result_3, core_result_0};
+      3'd2:    result_o = {core_result_4, core_result_1, core_result_3, core_result_0, core_result_2};
+      3'd3:    result_o = {core_result_0, core_result_2, core_result_4, core_result_1, core_result_3};
+      default: result_o = {core_result_1, core_result_3, core_result_0, core_result_2, core_result_4};
     endcase
   end
   endcase
