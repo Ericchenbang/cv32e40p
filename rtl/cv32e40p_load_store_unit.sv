@@ -104,6 +104,7 @@ module cv32e40p_load_store_unit #(
   
   // MODIFICATION: 320-bit Burst FSM Signals
   logic is_burst;
+  logic is_burst_q;
   logic [3:0] req_cnt_q;
   logic [3:0] req_cnt_next;
   logic [319:0] rdata_320_q;
@@ -338,7 +339,7 @@ module cv32e40p_load_store_unit #(
   end
 
   // MODIFICATION: 320-bit output to register file
-  assign data_rdata_ex_o = is_burst ? data_rdata_ex_o_comb : 
+  assign data_rdata_ex_o = is_burst_q ? data_rdata_ex_o_comb : 
                            {288'b0, ((resp_valid == 1'b1) ? data_rdata_ext : rdata_q)};
 
   assign misaligned_st   = data_misaligned_ex_i;
@@ -394,7 +395,9 @@ module cv32e40p_load_store_unit #(
   always_ff @(posedge clk or negedge rst_n) begin
       if (!rst_n) begin
         rdata_320_q <= '0;
+        is_burst_q  <= '0;
       end else begin
+        is_burst_q <= is_burst;
         if (is_burst && (~data_we_ex_i)) begin
           if (resp_valid) begin
             case (req_cnt_q)
