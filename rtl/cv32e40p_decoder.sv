@@ -415,21 +415,17 @@ module cv32e40p_decoder
           endcase
         end
         3'b111: begin
-          if (instr_rdata_i[24])
-            illegal_insn_o = 1'b1;
-          else begin
-            vdata_req          = 1'b1;
-            data_we_o          = 1'b1;
-            rega_used_o        = 1'b1;
-            slh_en             = 1'b1;
-            slh_regb_used_o    = 1'b1;
-            alu_operator_o     = ALU_ADD;
-            // offset from immediate
-            imm_b_mux_sel_o    = IMMB_S;
-            alu_op_b_mux_sel_o = OP_B_IMM;
+          vdata_req          = 1'b1;
+          data_we_o          = 1'b1;
+          rega_used_o        = 1'b1;
+          slh_en             = 1'b1;
+          slh_regb_used_o    = 1'b1;
+          alu_operator_o     = ALU_ADD;
+          // offset from immediate
+          imm_b_mux_sel_o    = IMMB_S;
+          alu_op_b_mux_sel_o = OP_B_IMM;
 
-            data_type_o = 2'b11;
-          end
+          data_type_o = 2'b11;
         end
         default: begin
             illegal_insn_o = 1'b1;
@@ -458,21 +454,17 @@ module cv32e40p_decoder
           endcase
         end
         3'b111: begin
-          if (instr_rdata_i[11:7]>5'd15)
-            illegal_insn_o = 1'b1;
-          else begin
-            vdata_req          = 1'b1;
-            slh_regfile_mem_we = 1'b1;
-            rega_used_o        = 1'b1;
-            alu_operator_o     = ALU_ADD;
-            // offset from immediate
-            alu_op_b_mux_sel_o = OP_B_IMM;
-            imm_b_mux_sel_o    = IMMB_I;
+          vdata_req          = 1'b1;
+          slh_regfile_mem_we = 1'b1;
+          rega_used_o        = 1'b1;
+          alu_operator_o     = ALU_ADD;
+          // offset from immediate
+          alu_op_b_mux_sel_o = OP_B_IMM;
+          imm_b_mux_sel_o    = IMMB_I;
 
-            // sign/zero extension
-            data_sign_extension_o = {1'b0,~instr_rdata_i[14]};
-            data_type_o = 2'b11;
-          end
+          // sign/zero extension
+          data_sign_extension_o = {1'b0,~instr_rdata_i[14]};
+          data_type_o = 2'b11;
         end
         default: begin
             illegal_insn_o = 1'b1;

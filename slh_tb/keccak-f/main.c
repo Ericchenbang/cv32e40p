@@ -287,67 +287,54 @@ static void KeccakF1600_StatePermute(uint64_t *state) {
 static void KeccakF1600_rvslh(uint64_t *state) {
     int round;
     uint64_t tmp;
+
+    asm volatile (
+        ".insn i 0x03, 0x7, x0, 0(%0)\n\t"
+        ".insn i 0x03, 0x7, x1, 40(%0)\n\t"
+        ".insn i 0x03, 0x7, x2, 80(%0)\n\t"
+        ".insn i 0x03, 0x7, x3, 120(%0)\n\t"
+        ".insn i 0x03, 0x7, x4, 160(%0)\n\t"
+        :
+        : "r"(state)
+        : "memory"
+    );
+
     for (round = 0; round < NROUNDS; round++) {
         asm volatile (
-            ".insn i 0x03, 0x7, x0, 0(%0)\n\t"
-            ".insn i 0x03, 0x7, x1, 40(%0)\n\t"
-            ".insn i 0x03, 0x7, x2, 80(%0)\n\t"
-            ".insn i 0x03, 0x7, x3, 120(%0)\n\t"
-            ".insn i 0x03, 0x7, x4, 160(%0)\n\t"
-            ".insn r4 0x1b, 0, 0, x5, x0, x1, x2\n\t"
-            ".insn r4 0x1b, 0, 0, x5, x5, x3, x4\n\t"
-            ".insn i 0x1b, 0x1, x5, x5, 0\n\t"
-            ".insn r4 0x1b, 0, 0x1, x6, x0, x5, x0\n\t"
-            ".insn r4 0x1b, 0, 0x1, x7, x1, x5, x1\n\t"
-            ".insn r4 0x1b, 0, 0x1, x8, x2, x5, x2\n\t"
-            ".insn r4 0x1b, 0, 0x1, x9, x3, x5, x3\n\t"
-            ".insn r4 0x1b, 0, 0x1, x10, x4, x5, x4\n\t"
-            ".insn r4 0x1b, 0, 0x2, x11, x7, x8, x6\n\t"
-            ".insn r4 0x1b, 0, 0x2, x12, x8, x9, x7\n\t"
-            ".insn r4 0x1b, 0, 0x2, x13, x9, x10, x8\n\t"
-            ".insn r4 0x1b, 0, 0x2, x14, x10, x6, x9\n\t"
-            ".insn r4 0x1b, 0, 0x2, x15, x6, x7, x10\n\t"
-            ".insn s 0x23, 0x7, x11, 0(%0)\n\t"
-            ".insn s 0x23, 0x7, x12, 40(%0)\n\t"
-            ".insn s 0x23, 0x7, x13, 80(%0)\n\t"
-            ".insn s 0x23, 0x7, x14, 120(%0)\n\t"
-            ".insn s 0x23, 0x7, x15, 160(%0)\n\t"
+            ".insn r4 0x1b, 0  , 0  , x5 , x0, x1, x2\n\t"
+            ".insn r4 0x1b, 0  , 0  , x5 , x5, x3, x4\n\t"
+            ".insn i  0x1b, 0x1,      x5 , x5, 0     \n\t"
+            ".insn r4 0x1b, 0  , 0x1, x6 , x0, x5, x0\n\t"
+            ".insn r4 0x1b, 0  , 0x1, x7 , x1, x5, x1\n\t"
+            ".insn r4 0x1b, 0  , 0x1, x8 , x2, x5, x2\n\t"
+            ".insn r4 0x1b, 0  , 0x1, x9 , x3, x5, x3\n\t"
+            ".insn r4 0x1b, 0  , 0x1, x10, x4, x5, x4\n\t"
+            
+            ".insn r4 0x1b, 0  , 0  , x0 , x16, x16, x16\n\t"
+            ".insn i  0x03, 0x7,      x16, 0(%1)\n\t"
+            "nop\n\t"
+            ".insn r4 0x1b, 0  , 0x2, x11, x7, x8, x6\n\t"
+            ".insn r4 0x1b, 0  , 0  , x16, x11, x0, x16\n\t"
+            ".insn r4 0x1b, 0  , 0x2, x17, x8, x9, x7\n\t"
+            ".insn r4 0x1b, 0  , 0x2, x18, x9, x10, x8\n\t"
+            ".insn r4 0x1b, 0  , 0x2, x19, x10, x6, x9\n\t"
+            ".insn r4 0x1b, 0  , 0x2, x20, x6, x7, x10\n\t"
             :
-            : "r"(state)
+            : "r"(state), "r"(&KeccakF_RoundConstants[round])
             : "memory"
         );
-        state[0] ^= KeccakF_RoundConstants[round];
-        tmp = state[1];
-        state[1] = state[5];
-        state[5] = tmp;
-        tmp = state[2];
-        state[2] = state[10];
-        state[10] = tmp;
-        tmp = state[3];
-        state[3] = state[15];
-        state[15] = tmp;
-        tmp = state[4];
-        state[4] = state[20];
-        state[20] = tmp;
-        tmp = state[7];
-        state[7] = state[11];
-        state[11] = tmp;
-        tmp = state[8];
-        state[8] = state[16];
-        state[16] = tmp;
-        tmp = state[9];
-        state[9] = state[21];
-        state[21] = tmp;
-        tmp = state[13];
-        state[13] = state[17];
-        state[17] = tmp;
-        tmp = state[14];
-        state[14] = state[22];
-        state[22] = tmp;
-        tmp = state[19];
-        state[19] = state[23];
-        state[23] = tmp;
     }
+
+    asm volatile (
+        ".insn s 0x23, 0x7, x0, 0(%0)\n\t"
+        ".insn s 0x23, 0x7, x1, 40(%0)\n\t"
+        ".insn s 0x23, 0x7, x2, 80(%0)\n\t"
+        ".insn s 0x23, 0x7, x3, 120(%0)\n\t"
+        ".insn s 0x23, 0x7, x4, 160(%0)\n\t"
+        :
+        : "r"(state)
+        : "memory"
+    );
 }
 
 int main() {

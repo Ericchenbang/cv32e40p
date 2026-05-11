@@ -244,12 +244,12 @@ module cv32e40p_id_stage
     input logic        regfile_alu_we_fw_power_i,
     input logic [31:0] regfile_alu_wdata_fw_i,
 
-    input logic [  3:0] slh_regfile_waddr_wb_i,
+    input logic [  4:0] slh_regfile_waddr_wb_i,
     input logic         slh_regfile_we_wb_i,
     input logic         slh_regfile_we_wb_power_i,
     input logic [319:0] slh_regfile_wdata_wb_i, // From wb_stage: selects data from data memory
 
-    input logic [  3:0] slh_regfile_alu_waddr_fw_i,
+    input logic [  4:0] slh_regfile_alu_waddr_fw_i,
     input logic         slh_regfile_alu_we_fw_power_i,
     input logic [319:0] slh_regfile_alu_wdata_fw_i,
 
@@ -364,9 +364,9 @@ module cv32e40p_id_stage
   logic [ 5:0] regfile_addr_rb_id;
   logic [ 5:0] regfile_addr_rc_id;
 
-  logic [ 3:0] slh_regfile_addr_ra_id;
-  logic [ 3:0] slh_regfile_addr_rb_id;
-  logic [ 3:0] slh_regfile_addr_rc_id;
+  logic [ 4:0] slh_regfile_addr_ra_id;
+  logic [ 4:0] slh_regfile_addr_rb_id;
+  logic [ 4:0] slh_regfile_addr_rc_id;
 
   logic        regfile_fp_a;
   logic        regfile_fp_b;
@@ -578,9 +578,9 @@ module cv32e40p_id_stage
   assign regfile_addr_ra_id = {regfile_fp_a, instr[REG_S1_MSB:REG_S1_LSB]};
   assign regfile_addr_rb_id = {regfile_fp_b, instr[REG_S2_MSB:REG_S2_LSB]};
 
-  assign slh_regfile_addr_ra_id = instr[REG_S1_MSB-1:REG_S1_LSB];
-  assign slh_regfile_addr_rb_id = instr[REG_S2_MSB-1:REG_S2_LSB];
-  assign slh_regfile_addr_rc_id = instr[REG_S4_MSB-1:REG_S4_LSB];
+  assign slh_regfile_addr_ra_id = instr[REG_S1_MSB:REG_S1_LSB];
+  assign slh_regfile_addr_rb_id = instr[REG_S2_MSB:REG_S2_LSB];
+  assign slh_regfile_addr_rc_id = instr[REG_S4_MSB:REG_S4_LSB];
 
   // register C mux
   always_comb begin
@@ -612,15 +612,15 @@ module cv32e40p_id_stage
   assign reg_d_alu_is_reg_b_id = (regfile_alu_waddr_fw_i == regfile_addr_rb_id) && (regb_used_dec == 1'b1) && (regfile_addr_rb_id != '0);
   assign reg_d_alu_is_reg_c_id = (regfile_alu_waddr_fw_i == regfile_addr_rc_id) && (regc_used_dec == 1'b1) && (regfile_addr_rc_id != '0);
 
-  assign slh_reg_d_ex_is_reg_a_id  = (regfile_waddr_ex_o         == slh_regfile_addr_ra_id) && (slh_rega_used_dec == 1'b1);
-  assign slh_reg_d_ex_is_reg_b_id  = (regfile_waddr_ex_o         == slh_regfile_addr_rb_id) && (slh_regb_used_dec == 1'b1);
-  assign slh_reg_d_ex_is_reg_c_id  = (regfile_waddr_ex_o         == slh_regfile_addr_rc_id) && (slh_regc_used_dec == 1'b1);
-  assign slh_reg_d_wb_is_reg_a_id  = (slh_regfile_waddr_wb_i     == slh_regfile_addr_ra_id) && (slh_rega_used_dec == 1'b1);
-  assign slh_reg_d_wb_is_reg_b_id  = (slh_regfile_waddr_wb_i     == slh_regfile_addr_rb_id) && (slh_regb_used_dec == 1'b1);
-  assign slh_reg_d_wb_is_reg_c_id  = (slh_regfile_waddr_wb_i     == slh_regfile_addr_rc_id) && (slh_regc_used_dec == 1'b1);
-  assign slh_reg_d_alu_is_reg_a_id = (slh_regfile_alu_waddr_fw_i == slh_regfile_addr_ra_id) && (slh_rega_used_dec == 1'b1);
-  assign slh_reg_d_alu_is_reg_b_id = (slh_regfile_alu_waddr_fw_i == slh_regfile_addr_rb_id) && (slh_regb_used_dec == 1'b1);
-  assign slh_reg_d_alu_is_reg_c_id = (slh_regfile_alu_waddr_fw_i == slh_regfile_addr_rc_id) && (slh_regc_used_dec == 1'b1);
+  assign slh_reg_d_ex_is_reg_a_id  = (regfile_waddr_ex_o         == slh_regfile_addr_ra_id) && (slh_rega_used_dec == 1'b1)  && !(slh_regfile_addr_ra_id[4]);
+  assign slh_reg_d_ex_is_reg_b_id  = (regfile_waddr_ex_o         == slh_regfile_addr_rb_id) && (slh_regb_used_dec == 1'b1)  && !(slh_regfile_addr_rb_id[4]);
+  assign slh_reg_d_ex_is_reg_c_id  = (regfile_waddr_ex_o         == slh_regfile_addr_rc_id) && (slh_regc_used_dec == 1'b1)  && !(slh_regfile_addr_rc_id[4]);
+  assign slh_reg_d_wb_is_reg_a_id  = (slh_regfile_waddr_wb_i     == slh_regfile_addr_ra_id) && (slh_rega_used_dec == 1'b1)  && !(slh_regfile_addr_ra_id[4]);
+  assign slh_reg_d_wb_is_reg_b_id  = (slh_regfile_waddr_wb_i     == slh_regfile_addr_rb_id) && (slh_regb_used_dec == 1'b1)  && !(slh_regfile_addr_rb_id[4]);
+  assign slh_reg_d_wb_is_reg_c_id  = (slh_regfile_waddr_wb_i     == slh_regfile_addr_rc_id) && (slh_regc_used_dec == 1'b1)  && !(slh_regfile_addr_rc_id[4]);
+  assign slh_reg_d_alu_is_reg_a_id = (slh_regfile_alu_waddr_fw_i == slh_regfile_addr_ra_id) && (slh_rega_used_dec == 1'b1)  && !(slh_regfile_addr_ra_id[4]);
+  assign slh_reg_d_alu_is_reg_b_id = (slh_regfile_alu_waddr_fw_i == slh_regfile_addr_rb_id) && (slh_regb_used_dec == 1'b1)  && !(slh_regfile_addr_rb_id[4]);
+  assign slh_reg_d_alu_is_reg_c_id = (slh_regfile_alu_waddr_fw_i == slh_regfile_addr_rc_id) && (slh_regc_used_dec == 1'b1)  && !(slh_regfile_addr_rc_id[4]);
 
   // kill instruction in the IF/ID stage by setting the instr_valid_id control
   // signal to 0 for instructions that are done
@@ -1067,8 +1067,9 @@ module cv32e40p_id_stage
   );
 
 cv32e40p_slh_register_file #(
-	.ADDR_WIDTH 	( 4    ),
-	.DATA_WIDTH 	( 320  ))
+	.ADDR_WIDTH    ( 5  ),
+	.ELEMENTS_WIDTH( 64 ),
+  .VECTORS_WIDTH ( 5  ))
 slh_register_file_i (
 	.clk       	( clk        ),
 	.rst_n     	( rst_n      ),

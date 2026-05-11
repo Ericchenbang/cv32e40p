@@ -113,7 +113,13 @@ module tb_top();
       if (exit_value == 0) $display("EXIT SUCCESS");
       else $display("EXIT FAILURE: %d", exit_value);
       for (i = 0; i<16; i+=1)
-        $display("slh regfile[%d]: %x", i, wrapper_i.top_i.core_i.id_stage_i.slh_register_file_i.mem[i]);
+        $display("slh regfile[%d]: %x %x %x %x %x", i,
+          wrapper_i.top_i.core_i.id_stage_i.slh_register_file_i.mem[i][4],
+          wrapper_i.top_i.core_i.id_stage_i.slh_register_file_i.mem[i][3],
+          wrapper_i.top_i.core_i.id_stage_i.slh_register_file_i.mem[i][2],
+          wrapper_i.top_i.core_i.id_stage_i.slh_register_file_i.mem[i][1],
+          wrapper_i.top_i.core_i.id_stage_i.slh_register_file_i.mem[i][0]
+        );
       $finish;
     end
   end
