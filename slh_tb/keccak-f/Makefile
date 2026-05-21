@@ -6,17 +6,18 @@ TARGET  = prog
 SRCDIR  = ../../example_tb/core/custom
 HEX     = $(TARGET).hex
 
+SYS_LIB_SRC = $(SRCDIR)/syscalls.c $(SRCDIR)/vectors.S $(SRCDIR)/crt0.S
+SHAKE_SRC   = ../fips202.c
+
 all: $(HEX)
 
 $(HEX): $(TARGET).elf
 	$(RISCV_EXE_PREFIX)objcopy -O verilog $< $@
 
-$(TARGET).elf: main.c
-	$(RISCV_EXE_PREFIX)gcc -march=rv32imc -o $@ -w -g -nostdlib \
-		-T ../../example_tb/core/custom/link.ld \
-		-static \
-		$(SRCDIR)/crt0.S \
-		$^ $(SRCDIR)/syscalls.c $(SRCDIR)/vectors.S \
+$(TARGET).elf: main.c $(SHAKE_SRC)
+	$(RISCV_EXE_PREFIX)gcc -march=rv32imc -o $@ -O2 -w -g -nostdlib \
+		-T ../../example_tb/core/custom/link.ld -static \
+		$^ $(SYS_LIB_SRC) \
 		-I $(RISCV)/riscv32-unknown-elf/include \
 		-L $(RISCV)/riscv32-unknown-elf/lib \
 		-lc -lm -lgcc
