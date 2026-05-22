@@ -68,7 +68,58 @@ static const uint64_t KeccakF_RoundConstants[NROUNDS] = {
  *
  * Arguments:   - uint64_t *state: pointer to input/output Keccak state
  **************************************************/
-extern void KeccakF1600_rvslh(uint64_t *state);
+static void KeccakF1600_rvslh(uint64_t *state){
+    int round;
+    uint64_t tmp;
+
+    asm volatile (
+        ".insn i 0x03, 0x7, x0, 0(%0)\n\t"
+        ".insn i 0x03, 0x7, x1, 40(%0)\n\t"
+        ".insn i 0x03, 0x7, x2, 80(%0)\n\t"
+        ".insn i 0x03, 0x7, x3, 120(%0)\n\t"
+        ".insn i 0x03, 0x7, x4, 160(%0)\n\t"
+        :
+        : "r"(state)
+        : "memory"
+    );
+
+    for (round = 0; round < NROUNDS; round++) {
+        asm volatile (
+            ".insn r4 0x1b, 0  , 0  , x5 , x0, x1, x2\n\t"
+            ".insn r4 0x1b, 0  , 0  , x5 , x5, x3, x4\n\t"
+            ".insn i  0x1b, 0x1,      x5 , x5, 0     \n\t"
+            ".insn r4 0x1b, 0  , 0x1, x6 , x0, x5, x0\n\t"
+            ".insn r4 0x1b, 0  , 0x1, x7 , x1, x5, x1\n\t"
+            ".insn r4 0x1b, 0  , 0x1, x8 , x2, x5, x2\n\t"
+            ".insn r4 0x1b, 0  , 0x1, x9 , x3, x5, x3\n\t"
+            ".insn r4 0x1b, 0  , 0x1, x10, x4, x5, x4\n\t"
+            
+            ".insn r4 0x1b, 0  , 0  , x0 , x16, x16, x16\n\t"
+            ".insn i  0x03, 0x7,      x16, 0(%1)\n\t"
+            "nop\n\t"
+            ".insn r4 0x1b, 0  , 0x2, x11, x7, x8, x6\n\t"
+            ".insn r4 0x1b, 0  , 0  , x16, x11, x0, x16\n\t"
+            ".insn r4 0x1b, 0  , 0x2, x17, x8, x9, x7\n\t"
+            ".insn r4 0x1b, 0  , 0x2, x18, x9, x10, x8\n\t"
+            ".insn r4 0x1b, 0  , 0x2, x19, x10, x6, x9\n\t"
+            ".insn r4 0x1b, 0  , 0x2, x20, x6, x7, x10\n\t"
+            :
+            : "r"(state), "r"(&KeccakF_RoundConstants[round])
+            : "memory"
+        );
+    }
+
+    asm volatile (
+        ".insn s 0x23, 0x7, x0, 0(%0)\n\t"
+        ".insn s 0x23, 0x7, x1, 40(%0)\n\t"
+        ".insn s 0x23, 0x7, x2, 80(%0)\n\t"
+        ".insn s 0x23, 0x7, x3, 120(%0)\n\t"
+        ".insn s 0x23, 0x7, x4, 160(%0)\n\t"
+        :
+        : "r"(state)
+        : "memory"
+    );
+}
 
 static void KeccakF1600_StatePermute(uint64_t *state) {
     KeccakF1600_rvslh(state);
