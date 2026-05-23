@@ -7,7 +7,7 @@ SRCDIR  = ../../example_tb/core/custom
 HEX     = $(TARGET).hex
 
 SYS_LIB_SRC = $(SRCDIR)/syscalls.c $(SRCDIR)/vectors.S $(SRCDIR)/crt0.S
-SRC         = ../keccakf.c main.c
+SRC         = ../keccakf.c ../fips202.c ../rvslh_shake256.c main.c
 
 all: $(HEX)
 

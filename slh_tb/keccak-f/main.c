@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "../fips202.h"
+#include "../keccakf.h"
 
 int main() {
     uint64_t s[25] = {0};
@@ -8,7 +8,7 @@ int main() {
     // start Performance Counter
     printf("baseline:\n");
     asm volatile ("rdcycle %0" : "=r"(start));
-    _KeccakF1600_base(s);
+    KeccakF1600_StatePermute(s);
     asm volatile ("rdcycle %0" : "=r"(end));
     volatile uint32_t base = (uint32_t)(end - start);
     printf("Cycles: %d\n\n", base);
@@ -16,7 +16,7 @@ int main() {
     uint64_t s2[25] = {0};
     printf("hwacc:\n");
     asm volatile ("rdcycle %0" : "=r"(start));
-    _KeccakF1600_rvslh(s2);
+    rvslh_KeccakF1600_StatePermute(s2);
     asm volatile ("rdcycle %0" : "=r"(end));
     volatile uint32_t hwacc = (uint32_t)(end - start);
     printf("Cycles: %d\n\n", hwacc);
